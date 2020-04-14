@@ -75,14 +75,14 @@ Usage:
   python get_cons_pos.py --in <FILE> --out <DIR> --ref <STRING> --name <STRING>
 
 Mandatory:
-  --in STR        A multiple FASTA file. 
-  --out STR       Directory for temporary and output files.
-  --ref STR       Name of the reference sequence.
-  --name STR      Name of the output files.
+  --in STR          A multiple FASTA file. 
+  --out STR         Directory for temporary and output files.
+  --ref STR         Name of the reference sequence.
+  --name STR        Name of the output files.
 		
 Optional:
   --mincons FLOAT  Minimal conservation frequency.[1.0]
-  --mafft STR        Full path to MAFFT (if not in your $PATH)
+  --mafft STR      Full path to MAFFT (if not in your $PATH)
 ```
 
 
