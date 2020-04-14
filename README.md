@@ -40,6 +40,8 @@ The output format of this analysis of conserved regions matches the output forma
 
 ## Usage
 
+### Running the main function (CGI)
+
 ```
 Usage:
   python CGI.py --baits <DIR> --out <DIR> --subject <FILE>
@@ -63,5 +65,28 @@ Optional:
   --simcut FLOAT     Minimal similarity of BLAST hits [40.0]
 ```
 
+### Generating tables of conserved residues
+
+The generation of required input data (conserved residues) can be performed based on a multiple FASTA file which contains previously characterized sequences of the same gene in multiple species.
+
+
+```
+Usage:
+  python get_cons_pos.py --in <FILE> --out <DIR> --ref <STRING> --name <STRING>
+
+Mandatory:
+  --in STR        A multiple FASTA file. 
+  --out STR       Directory for temporary and output files.
+  --ref STR       Name of the reference sequence.
+  --name STR      Name of the output files.
+		
+Optional:
+  --mincons FLOAT  Minimal conservation frequency.[1.0]
+  --mafft STR        Full path to MAFFT (if not in your $PATH)
+```
+
+
+
+## References
 
 
