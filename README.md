@@ -35,3 +35,33 @@ The presence of all conserved residues is analysed in all candidate sequences. P
 ### Conserved regions
 The output format of this analysis of conserved regions matches the output format of conserved residues. The percentage of identical amino acid residues in the domain is calculated for each candidate sequence.
 
+
+
+
+## Usage
+
+```
+Usage:
+  python CGI.py --baits <DIR> --out <DIR> --subject <FILE>
+
+Mandatory:
+  Bait sequences
+  --baits STR        Directory with (multiple) FASTA files. 
+  
+  Output directory
+  --out STR          Output directory
+
+  Input sequences
+  --subject STR      Multiple FASTA file with sequences to screen.
+		
+Optional:
+  --positions STR    Directory with text files (one per gene).
+  --seqtype STR      Defines type of input sequence (pep|rna|dna)[pep]
+  --mafft STR        Full path to MAFFT (if not in your $PATH)
+  --cpus INT         Number of threads in BLAST runs [10]
+  --scoreratio FLOAT BLAST score ratio of self vs. input sequences [0.3]
+  --simcut FLOAT     Minimal similarity of BLAST hits [40.0]
+```
+
+
+
