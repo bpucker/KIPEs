@@ -279,12 +279,13 @@ def get_alignment_pos( ref_aln, target_index ):
 	
 	index = -1
 	counter = 0
-	while index < target_index:
+	while counter < len( ref_aln ):
 		if ref_aln[ counter ] != "-":
 			index += 1
 			if index == target_index:
 				return counter
 		counter += 1
+	return "ERROR: target index exceeds sequence length!"
 
 
 def check_alignment_for_cons_res( can_aln, ref_aln, residues ):
@@ -293,6 +294,10 @@ def check_alignment_for_cons_res( can_aln, ref_aln, residues ):
 	results = []
 	for res in residues:
 		alignment_pos = get_alignment_pos( ref_aln, res['pos']-1 )
+		print str( alignment_pos ) + '\t' + res['aa'] + "\t" + str( res['pos'] )
+		print ref_aln[ alignment_pos ] + "\t" + ref_aln[ alignment_pos-10:alignment_pos+10 ]
+		print can_aln[ alignment_pos ] + "\t" + can_aln[ alignment_pos-10:alignment_pos+10 ]
+		print 
 		results.append( can_aln[ alignment_pos ] == res['aa'] )
 	return results
 
@@ -312,12 +317,13 @@ def check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_can
 					header.append( each['aa'] + str( each['pos'] ) )
 				out.write( "\t".join( header ) + '\n' )
 				for candidate in candidates:
+					print "gene: " + gene
 					can_aln = alignment_per_candidate[ candidate ][ candidate ]
 					ref_aln = alignment_per_candidate[ candidate ][ info['seq'] ]
 					results = check_alignment_for_cons_res( can_aln, ref_aln, residues )
 					out.write( "\t".join( map( str, [ subject_name_mapping_table[ candidate ] ] + results  ) ) + '\n' )
 		except KeyError:
-			print "no information available about gene: " + gene
+			print "no information (conserved residues) available about gene: " + gene
 
 
 def check_alignment_for_cons_reg( can_aln, ref_aln, regions ):
@@ -352,12 +358,11 @@ def check_cons_reg( cons_reg_matrix_folder, regions_per_gene, alignment_per_cand
 				out.write( "\t".join( header ) + '\n' )
 				for candidate in candidates:
 					can_aln = alignment_per_candidate[ candidate ][ candidate ]
-					print "here" + candidate
 					ref_aln = alignment_per_candidate[ candidate ][ info['seq'] ]
 					results = check_alignment_for_cons_reg( can_aln, ref_aln, regions )
 					out.write( "\t".join( map( str, [ subject_name_mapping_table[ candidate ] ] + results  ) ) + '\n' )
 		except KeyError:
-			print "no information available about gene: " + gene
+			print "no information (conserved regions) available about gene: " + gene
 
 
 def generate_subject_file( peptide_file, subject_name_file, subject_file ):
