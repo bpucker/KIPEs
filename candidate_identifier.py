@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-### v0.16 ###
+### v0.17 ###
 
 __usage__ = """
 					python candidate_identifier.py
@@ -233,6 +233,7 @@ def generate_global_alignments( mafft, peps, blast_hits, tmp_dir, ref_seqs ):
 def generate_sim_matrix_output_files( sim_matrix_folder, sim_matrix_per_gene, subject_name_mapping_table ):
 	"""! @brief generate one output file per gene """
 	
+	sim_per_pep = {}
 	for gene in sim_matrix_per_gene.keys():
 		output_file = sim_matrix_folder + gene + "_sim_matrix.txt"
 		with open( output_file, "w" ) as out:
@@ -243,7 +244,9 @@ def generate_sim_matrix_output_files( sim_matrix_folder, sim_matrix_per_gene, su
 				new_line = [ subject_name_mapping_table[ candidate ] ]
 				for query in queries:
 					new_line.append( 100.0*data[ candidate ][ query ] )
+				sim_per_pep.update( { candidate: sum( new_line[1:] ) / len( new_line[1:] ) } )
 				out.write( "\t".join( map( str, new_line ) ) + '\n' )
+	return sim_per_pep
 
 
 def load_pos_data_per_gene( pos_data_files ):
@@ -294,10 +297,6 @@ def check_alignment_for_cons_res( can_aln, ref_aln, residues ):
 	results = []
 	for res in residues:
 		alignment_pos = get_alignment_pos( ref_aln, res['pos']-1 )
-		print str( alignment_pos ) + '\t' + res['aa'] + "\t" + str( res['pos'] )
-		print ref_aln[ alignment_pos ] + "\t" + ref_aln[ alignment_pos-10:alignment_pos+10 ]
-		print can_aln[ alignment_pos ] + "\t" + can_aln[ alignment_pos-10:alignment_pos+10 ]
-		print 
 		results.append( can_aln[ alignment_pos ] == res['aa'] )
 	return results
 
@@ -305,6 +304,7 @@ def check_alignment_for_cons_res( can_aln, ref_aln, residues ):
 def check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_candidate, candidates_by_gene, subject_name_mapping_table ):
 	"""! @brief check all candidate sequences for conserved residues and generate result tables """
 	
+	cons_pos_per_pep = {}
 	for gene in candidates_by_gene.keys():
 		candidates = candidates_by_gene[ gene ]
 		try:
@@ -322,8 +322,10 @@ def check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_can
 					ref_aln = alignment_per_candidate[ candidate ][ info['seq'] ]
 					results = check_alignment_for_cons_res( can_aln, ref_aln, residues )
 					out.write( "\t".join( map( str, [ subject_name_mapping_table[ candidate ] ] + results  ) ) + '\n' )
+					cons_pos_per_pep.update( { candidate: sum( results ) / len( results ) } )
 		except KeyError:
 			print "no information (conserved residues) available about gene: " + gene
+	return cons_pos_per_pep
 
 
 def check_alignment_for_cons_reg( can_aln, ref_aln, regions ):
@@ -345,6 +347,7 @@ def check_alignment_for_cons_reg( can_aln, ref_aln, regions ):
 def check_cons_reg( cons_reg_matrix_folder, regions_per_gene, alignment_per_candidate, candidates_by_gene, subject_name_mapping_table ):
 	"""! @brief check all candidate sequences for conserved residues and generate result tables """
 	
+	cons_reg_per_pep = {}
 	for gene in candidates_by_gene.keys():
 		candidates = candidates_by_gene[ gene ]
 		try:
@@ -361,8 +364,10 @@ def check_cons_reg( cons_reg_matrix_folder, regions_per_gene, alignment_per_cand
 					ref_aln = alignment_per_candidate[ candidate ][ info['seq'] ]
 					results = check_alignment_for_cons_reg( can_aln, ref_aln, regions )
 					out.write( "\t".join( map( str, [ subject_name_mapping_table[ candidate ] ] + results  ) ) + '\n' )
+					cons_reg_per_pep.update( { candidate: sum( results ) / len( results ) } )
 		except KeyError:
 			print "no information (conserved regions) available about gene: " + gene
+	return cons_reg_per_pep
 
 
 def generate_subject_file( peptide_file, subject_name_file, subject_file ):
@@ -960,12 +965,74 @@ def dna_screener( subject, peptide_file, subject_name_file, dna_folder, query_fi
 		os.makedirs( tmp_folder )
 	pep_seqs = reconstruct_sequences( gene_groups_per_query, genome_seq, query_sequences, tmp_folder, mafft )
 	
+	no_dup_status = True	#this option could be integrated later
+	black_list = {}
+	
 	with open( subject_name_file, "w" ) as out2:
 		with open( peptide_file, "w" ) as out:	#this file will serve as input for the remaining pipeline
 			for query in pep_seqs.keys():
 				for gene in pep_seqs[ query ].keys():
-					out.write( '>' + str( query ) + "_%_" + str( gene ) + '\n' + pep_seqs[ query ][ gene ] + '\n' )
-					out2.write( str( query ) + "_%_" + str( gene ) + "\t" + str( query ) + "_%_" + str( gene ) + '\n' )
+					if no_dup_status:
+						try:
+							black_list[ pep_seqs[ query ][ gene ] ]
+						except KeyError:
+							out.write( '>' + str( query ) + "_%_" + str( gene ) + '\n' + pep_seqs[ query ][ gene ] + '\n' )
+							out2.write( str( query ) + "_%_" + str( gene ) + "\t" + str( query ) + "_%_" + str( gene ) + '\n' )
+							black_list.update( { pep_seqs[ query ][ gene ]: None } )
+					else:
+						out.write( '>' + str( query ) + "_%_" + str( gene ) + '\n' + pep_seqs[ query ][ gene ] + '\n' )
+						out2.write( str( query ) + "_%_" + str( gene ) + "\t" + str( query ) + "_%_" + str( gene ) + '\n' )
+
+
+### --- final summary section --- ###
+
+def generate_final_pep_files( 	peps, final_pep_folder, candidates_by_gene,
+													xsimcut, xconsrescut, xconsregcut,
+													sim_per_pep, cons_pos_per_pep, cons_reg_per_pep,
+													summary_file, subject_name_mapping_table
+												):
+	"""! @brief generate multiple FASTA files per gene for all candidates passing the filter """
+	
+	complete_summary = []
+	with open( summary_file, "w") as summary:
+		summary.write( "ID\tGene\tSimilarity\tConservedResidues\tConservedRegions\n" )
+		for gene in candidates_by_gene.keys():
+			output_file = final_pep_folder + gene + ".fasta"
+			with open( output_file, "w" ) as out:
+				candidates = candidates_by_gene[ gene ]
+				values_for_sorting = []
+				for candidate in candidates:
+					try:
+						psim = sim_per_pep[ candidate ]
+					except KeyError:
+						psim = 0
+					try:
+						pres = cons_pos_per_pep[ candidate ]
+					except KeyError:
+						pres = 0
+					try:
+						preg = cons_reg_per_pep[ candidate ]
+					except KeyError:
+						preg = 0
+					
+					values_for_sorting.append( { 	'id': candidate,
+																			'sim': psim,
+																			'res': pres,
+																			'reg': preg,
+																			'gene': gene
+																		} )
+				values_for_sorting = sorted( values_for_sorting, key=itemgetter('res', 'reg', 'sim') )[::-1]
+				complete_summary += values_for_sorting
+				for y, candidate in enumerate( values_for_sorting ):
+					if candidate['sim'] >= xsimcut and candidate['res'] >= xconsrescut and candidate['reg'] >= xconsregcut:
+						out.write( '>' + subject_name_mapping_table[ candidate['id'] ] + '\n' + peps[ candidate['id'] ] + '\n'  )
+						summary.write( "\t".join( map( str, [ 	subject_name_mapping_table[ candidate['id'] ],
+																						gene + "_" + str( y+1 ),
+																						candidate['sim'],
+																						candidate['res'],
+																						candidate['reg']																						
+																					] ) ) + '\n' )
+	return complete_summary
 
 
 def main( arguments ):
@@ -1005,8 +1072,11 @@ def main( arguments ):
 	else:
 		similarity_cutoff = 40.0	#value in percent
 	
-	
 	max_gene_size = 5000
+	
+	xsimcut = 0.4	#minimal similarity in global alignment to keep candidate
+	xconsrescut = 0.8	#minimal ratio of conserved residues to keep candidate
+	xconsregcut = -1	#minimal similarity of conserved regions to keep candidate (deactivated by default)
 	
 	if not os.path.exists( output_dir ):
 		os.makedirs( output_dir )
@@ -1078,7 +1148,8 @@ def main( arguments ):
 	sim_matrix_folder = output_dir + "similarity_matrix/"
 	if not os.path.exists( sim_matrix_folder ):
 		os.makedirs( sim_matrix_folder )
-	generate_sim_matrix_output_files( sim_matrix_folder, sim_matrix_per_gene, subject_name_mapping_table )
+	sim_per_pep = generate_sim_matrix_output_files( sim_matrix_folder, sim_matrix_per_gene, subject_name_mapping_table )
+	
 	
 	# --- check conserved residues in alignment --- #
 	pos_data_files = glob.glob( pos_data_dir + "*.txt" )
@@ -1086,14 +1157,22 @@ def main( arguments ):
 	cons_res_matrix_folder = output_dir + "conserved_residues/"
 	if not os.path.exists( cons_res_matrix_folder ):
 		os.makedirs( cons_res_matrix_folder )
-	check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_candidate, candidates_by_gene, subject_name_mapping_table )
+	cons_pos_per_pep = check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_candidate, candidates_by_gene, subject_name_mapping_table )
+	
 	
 	# --- check conserved regions in alignment --- #
 	cons_reg_matrix_folder = output_dir + "conserved_regions/"
 	if not os.path.exists( cons_reg_matrix_folder ):
 		os.makedirs( cons_reg_matrix_folder )
-	check_cons_reg( cons_reg_matrix_folder, regions_per_gene, alignment_per_candidate, candidates_by_gene, subject_name_mapping_table )
-
+	cons_reg_per_pep = check_cons_reg( cons_reg_matrix_folder, regions_per_gene, alignment_per_candidate, candidates_by_gene, subject_name_mapping_table )
+	
+	# --- generate final peptide files and summary file --- #
+	final_pep_folder = output_dir + "final_pep_files/"
+	if not os.path.exists( final_pep_folder ):
+		os.makedirs( final_pep_folder )
+	
+	summary_file = output_dir + "summary.txt"
+	summary = generate_final_pep_files( peps, final_pep_folder, candidates_by_gene, xsimcut, xconsrescut, xconsregcut, sim_per_pep, cons_pos_per_pep, cons_reg_per_pep, summary_file, subject_name_mapping_table )
 
 #build phylogenetic tree with landmark sequences
 
