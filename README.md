@@ -1,4 +1,4 @@
-# CGI (Candidate Gene Identifier)
+# CGI (Candidate Gene Identificatory)
 
 ## Abstract
 
