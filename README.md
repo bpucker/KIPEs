@@ -18,7 +18,9 @@ If a collection of transcript sequences if provided, putative open reading frame
 
 ### Genome sequence (genome assembly)
 
-A tBLASTn is applied to identify regions in the genome sequence, which might encode the desired peptide. As BLAST hits only indicate exons and might be fragmented, BLAST hits are group to putative genes. Fragments of a putative gene are extended to account for incomplete hits at exon borders. This includes the detection of splice sites (currently only canonical GT-AG combinations).
+A tBLASTn is applied to identify regions in the genome sequence, which might encode the desired peptide. As BLAST hits only indicate exons and might be fragmented, BLAST hits are group to putative genes. Fragments of a putative gene are extended to account for incomplete hits at exon borders. This includes the detection of splice sites (currently only canonical GT-AG combinations). If full length peptide sequences are provided as query, the stop codon should be indicated by a * at the end of the peptide sequence.
+
+
 
 ## Result files
 
