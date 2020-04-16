@@ -63,14 +63,46 @@ Mandatory:
 Optional:
   --positions STR    Directory with text files (one per gene).
   --seqtype STR      Defines type of input sequence (pep|rna|dna)[pep]
-  --mafft STR        Full path to MAFFT (if not in your $PATH)
+ 
   --cpus INT         Number of threads in BLAST runs [10]
   --scoreratio FLOAT BLAST score ratio of self vs. input sequences [0.3]
   --simcut FLOAT     Minimal similarity of BLAST hits [40.0]
-  --blastp <PATH_TO_AND_INCLUDING_BINARY>[blastp]
-  --tblastn <PATH_TO_AND_INCLUDING_BINARY>[tblastn]
-  --makeblastdb <PATH_TO_AND_INCLUDING_BINARY>[makeblastdb]
+  --checks           Validation of input data (on|off)[on]
+   
+  --mafft STR         Full path to MAFFT (if not in your $PATH)
+  --blastp STR        Full path to the BLASTp binary (if not in your $PATH)
+  --tblastn STR       Full path to the tBLASTn binary (if not in your $PATH)
+  --makeblastdb STR   Full path to the makeblastdb binary (if not in your $PATH)
 ```
+
+`--baits` is the full path to a folder containing (mutliple) FASTA files. The filename needs to match the gene name. Extension should be '.fasta' or '.fa'.
+
+`--out` is the full path to an output folder which will be created if necessary. All temporary and result files will be stored in this folder and subfolders therein.
+
+`--subject` is the full path to an input multiple FASTA file. A collection of peptide (pep), transcript (rna), or genomic (dna) sequences can serve as input. The appropriate input data type needs to be specified via `--seqtype` (pep|rna|dna).
+
+`--positions` is the full path to a folder containing text files matching the provided FASTA files. The filename needs to match the gene name. Extension should be '.txt'. Each file should contain a single line of TAB-separated fiels. The first field must match the name of one sequence in the corresponding FASTA file. Conserved amino acid positons need to be listed based on this sequence. Each following field contains one conserved amino acid residue which should be checked in the target sequences. Example:
+AtCHS	R13	Q16	R17
+
+`--seqtype` specifies the input data type as peptide (pep), transcript (rna), or genomic (dna) sequences.
+
+`--cpus` specifies the number of threads to use for BLAST.
+
+`--scoreratio` specifies the minimal score ratio between BLAST hits against the subject sequences and the bait sequence itself. The value range is 0.0 to 1.0 with default at 0.3.
+
+`--simcut` specifies the minimal similarity of BLAST hits against the subject to be considered. The value range is 0 to 100 with default at 40.
+
+`--checks` activates (on) or deactivates (off) the validation of input data. Sequence names provided in the conserved positions files are checked against the sequence names in the bait sequence files.
+
+`--mafft` full path to MAFFT binary if this is not included in $PATH.
+
+`--blastp` full path to blastp binary if this is not included in $PATH.
+
+`--tblastn` full path to tblastn binary if this is not included in $PATH.
+
+`--makeblastdb` full path to makeblastdb binary if this is not included in $PATH.
+
+
 
 ### Generating tables of conserved residues
 
