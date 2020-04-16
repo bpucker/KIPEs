@@ -37,8 +37,12 @@ The output format of this analysis of conserved regions matches the output forma
 
 
 
-
 ## Usage
+
+### General recommendation
+
+Full paths should be used to specify input and output files and folders. Sequence names should not contain white space characters like spaces and TABs. Underscores can be used to replace spaces.
+
 
 ### Running the main function (CGI)
 
@@ -63,6 +67,9 @@ Optional:
   --cpus INT         Number of threads in BLAST runs [10]
   --scoreratio FLOAT BLAST score ratio of self vs. input sequences [0.3]
   --simcut FLOAT     Minimal similarity of BLAST hits [40.0]
+  --blastp <PATH_TO_AND_INCLUDING_BINARY>[blastp]
+  --tblastn <PATH_TO_AND_INCLUDING_BINARY>[tblastn]
+  --makeblastdb <PATH_TO_AND_INCLUDING_BINARY>[makeblastdb]
 ```
 
 ### Generating tables of conserved residues
