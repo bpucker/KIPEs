@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-### v0.18 ###
+### v0.181 ###
 
 __usage__ = """
 					python cgi.py
@@ -19,6 +19,10 @@ __usage__ = """
 					--minsim <FLOAT, MINIMAL_SIMILARITY_IN_GLOBAL_ALIGNMENT>[0.4]
 					--minres <FLOAT, MINIMAL_PROPORTION_OF_CONSERVED_RESIDUES>[0.8]
 					--minreg <FLOAT, MINIMAL_PROPORTION_OF_CONSERVED_REGIONS>[off]
+					--blastp <PATH_TO_AND_INCLUDING_BINARY>[blastp]
+					--tblastn <PATH_TO_AND_INCLUDING_BINARY>[tblastn]
+					--makeblastdb <PATH_TO_AND_INCLUDING_BINARY>[makeblastdb]
+					--checks <VALIDATE_INPUT_BEFORE_RUNNING_PIPELINE (on|off)>[on]
 					
 					bug reports and feature requests: bpucker@cebitec.uni-bielefeld.de
 					"""
@@ -939,7 +943,7 @@ def reconstruct_sequences( gene_groups_per_query, genome_seq, querys, tmp_folder
 	return all_pep_seqs
 
 
-def dna_screener( subject, peptide_file, subject_name_file, dna_folder, query_file, mafft, cpus, max_gene_size ):
+def dna_screener( subject, peptide_file, subject_name_file, dna_folder, query_file, mafft, cpus, max_gene_size, makeblastdb, tblastn ):
 	"""! @brief screen genome sequence for encoded peptides matching the query """
 	
 	if not os.path.exists( dna_folder ):
@@ -956,8 +960,8 @@ def dna_screener( subject, peptide_file, subject_name_file, dna_folder, query_fi
 	blast_result_file = dna_folder + "results.txt"
 	
 	if not os.path.isfile( blast_result_file ):
-		os.popen( "makeblastdb -in " + dna_file + " -out " + blast_db + " -dbtype nucl" )
-		os.popen( "tblastn -query " + query_file + " -db " + blast_db + " -out " + blast_result_file + " -outfmt 6 -evalue 0.01 -word_size 4 -num_threads " + str( cpus ) )
+		os.popen( makeblastdb + " -in " + dna_file + " -out " + blast_db + " -dbtype nucl" )
+		os.popen( tblastn + " -query " + query_file + " -db " + blast_db + " -out " + blast_result_file + " -outfmt 6 -evalue 0.01 -word_size 4 -num_threads " + str( cpus ) )
 	
 	gene_groups_per_query = load_blast_result( blast_result_file, max_gene_size )
 	
@@ -1039,6 +1043,34 @@ def generate_final_pep_files( 	peps, final_pep_folder, candidates_by_gene,
 	return complete_summary
 
 
+def validate_input( pos_data_dir, bait_seq_data_dir ):
+	"""! @brief validate input """
+	
+	pos_data_files = glob.glob( pos_data_dir + "*.txt" )
+	fasta_files = glob.glob( bait_seq_data_dir + "*.fa" ) + glob.glob( bait_seq_data_dir + "*.fasta" )
+	baits = {}
+	for fasta in fasta_files:
+		baits.update( { fasta.split(('/')[-1].split('.')[0]: load_sequences( fasta ) } )
+	errors = []
+	for filename in pos_data_files:
+		ID = filename.split('/')[-1].split('.')[0]
+		seq_id = False
+		len_error_state = False
+		try:
+			with open( filename, "r" ) as f:
+				line = f.readline().strip()
+				seq_id = line.split('\t')[0]
+				positions = map( int, re.findall( "\d+", ".".join( line.split('\t')[:-1] ) ) )
+			length = len( baits[ ID ][ seq_id ] )
+			if len( positions ) > 0:
+				if max( positions )-1 > length:
+					len_error_state = True
+					errors.append( { 'seq': seq_id, 'gene': ID, 'len': len_error_state } )
+		except:
+			errors.append( { 'seq': seq_id, 'gene': ID, 'len': len_error_state } )
+	return errors
+
+
 def main( arguments ):
 	"""! @brief run everything """
 	
@@ -1059,6 +1091,21 @@ def main( arguments ):
 		mafft = arguments[ arguments.index('--mafft')+1 ]
 	else:
 		mafft = "mafft"
+	
+	if '--blastp' in arguments:
+		blastp = arguments[ arguments.index('--blastp')+1 ]
+	else:
+		blastp = "blastp"
+	
+	if '--tblastn' in arguments:
+		tblastn = arguments[ arguments.index('--tblastn')+1 ]
+	else:
+		tblastn = "tblastn"
+	
+	if '--makeblastdb' in arguments:
+		makeblastdb = arguments[ arguments.index('--makeblastdb')+1 ]
+	else:
+		makeblastdb = "makeblastdb"
 	
 	if '--cpus' in arguments:
 		cpus = int( arguments[ arguments.index('--cpus')+1 ] )
@@ -1096,6 +1143,24 @@ def main( arguments ):
 	else:
 		xconsregcut = -1	#minimal similarity of conserved regions to keep candidate (deactivated by default)
 	
+	if '--checks' in arguments:
+		checks = arguments[ arguments.index('--checks')+1 ]
+	else:
+		checks = "on"
+	
+	errors = validate_input( pos_data_dir, bait_seq_data_dir )
+	if len( errors ) > 0:
+		for error in errors:
+			if error['seq']:
+				if error['len']:
+					print "conserved residue position in sequence " + error['seq'] + " of " + error['gene'] + " exceeds sequence length."
+				else:
+					print "conserved residue sequence " + error['seq'] + " of " + error['gene'] + " is not matching bait sequences."
+			else:
+				print "no conserved residue information detected for " + error['gene'] + "."
+		if checks == "on":
+			sys.exit( "Execution of script terminated due to errors. Fix errors or set '--checks' to 'off' in order to proceed." )
+	
 	if not os.path.exists( output_dir ):
 		os.makedirs( output_dir )
 	
@@ -1131,7 +1196,7 @@ def main( arguments ):
 	# --- get subject peptide sequences if DNA is provided --- #
 	if seqtype == "dna":
 		dna_folder = output_dir + "DNA_screen/"
-		dna_screener( subject, peptide_file, subject_name_file, dna_folder, query_file, mafft, cpus, max_gene_size )
+		dna_screener( subject, peptide_file, subject_name_file, dna_folder, query_file, mafft, cpus, max_gene_size, makeblastdb, tblastn )
 	
 	
 	subject_name_mapping_table = load_subject_name_mapping_table( subject_name_file )
@@ -1140,13 +1205,13 @@ def main( arguments ):
 	blast_result_file = output_dir + "blast_results.txt"
 	blast_db = output_dir + "blastdb"
 	if not os.path.isfile( blast_result_file ):
-		os.popen( "makeblastdb -in " + peptide_file + " -out " + blast_db + " -dbtype prot" )
-		os.popen( "blastp -query " + query_file + " -db " + blast_db + " -out " + blast_result_file + " -outfmt 6 -evalue 0.00001 -num_threads " + str( cpus ) )
+		os.popen( makeblastdb + " -in " + peptide_file + " -out " + blast_db + " -dbtype prot" )
+		os.popen( blastp + " -query " + query_file + " -db " + blast_db + " -out " + blast_result_file + " -outfmt 6 -evalue 0.00001 -num_threads " + str( cpus ) )
 	self_blast_result_file = output_dir + "self_blast_results.txt"
 	self_blast_db = output_dir + "self_blastdb"
 	if not os.path.isfile( self_blast_result_file ):
-		os.popen( "makeblastdb -in " + query_file + " -out " + self_blast_db + " -dbtype prot" )
-		os.popen( "blastp -query " + query_file + " -db " + self_blast_db + " -out " + self_blast_result_file + " -outfmt 6 -evalue 0.00001 -num_threads " + str( cpus ) )
+		os.popen( makeblastdb + " -in " + query_file + " -out " + self_blast_db + " -dbtype prot" )
+		os.popen( blastp + " -query " + query_file + " -db " + self_blast_db + " -out " + self_blast_result_file + " -outfmt 6 -evalue 0.00001 -num_threads " + str( cpus ) )
 	
 	
 	# --- load BLAST results --- #
