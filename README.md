@@ -127,6 +127,11 @@ Optional:
 ```
 
 
+## Limitations and outlook
+
+As this tool is an automatic identification pipeline for candidate genes, the resolution of this analysis might be inferior to a manual annotation in certain cases like ODDs (F3H, FLS, LDOX). Therefore, it is recommended to carefully inspect the results from this pipeline. Generally, the quality of results is depending on the input quality. This pipeline was developed for the annotation of genes in the flavonoid biosynthesis of plants, but could be applied to other pathways if sufficient information is available.
+
+
 
 ## References
 
