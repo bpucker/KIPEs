@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-### v0.183 ###
+### v0.19 ###
 
 __usage__ = """
 					python cgi.py
@@ -11,7 +11,7 @@ __usage__ = """
 					
 					optional:
 					--seqtype <TYPE_OF_SUBJECT_SEQUENCES(pep|rna|dna)>[pep]
-					--mafft <PATH_TO_MAFFT>[mafft]
+					--checks <VALIDATE_INPUT_BEFORE_RUNNING_PIPELINE (on|off)>[on]
 					--cpus <INT, NUMBER_OF_BLAST_THREADS>[10]
 					--scoreratio <FLOAT, BLAST_SCORE_RATIO_CUTOFF>[0.3]
 					--simcut <FLOAT, MINIMAL_BLAST_HIT_SIMILARITY_IN_PERCENT>[40.0]
@@ -19,10 +19,14 @@ __usage__ = """
 					--minsim <FLOAT, MINIMAL_SIMILARITY_IN_GLOBAL_ALIGNMENT>[0.4]
 					--minres <FLOAT, MINIMAL_PROPORTION_OF_CONSERVED_RESIDUES>[0.8]
 					--minreg <FLOAT, MINIMAL_PROPORTION_OF_CONSERVED_REGIONS>[off]
+					
+					--mafft <PATH_TO_MAFFT>[mafft]
 					--blastp <PATH_TO_AND_INCLUDING_BINARY>[blastp]
 					--tblastn <PATH_TO_AND_INCLUDING_BINARY>[tblastn]
 					--makeblastdb <PATH_TO_AND_INCLUDING_BINARY>[makeblastdb]
-					--checks <VALIDATE_INPUT_BEFORE_RUNNING_PIPELINE (on|off)>[on]
+					
+					--fasttree <PATH_TO_FASTTREE>
+					--pxclsq <PATH_TO_pxclsq>
 					
 					bug reports and feature requests: bpucker@cebitec.uni-bielefeld.de
 					"""
@@ -46,15 +50,15 @@ def generate_query( fasta, blast_query_dir, nmt ):
 			seq = []
 			while line:
 				if line[0] == ">":
-					out.write( '>' + ID + "_%_" + str( counter ) + '\n' + "".join( seq ) + '\n' )
-					nmt.write( ID + "_%_" + str( counter ) + '\n' + line.strip()[1:].replace( "\t", "   " ) + "\t" )
+					out.write( '>' + ID + "_%_" + str( counter ).zfill( 3 ) + '\n' + "".join( seq ) + '\n' )
+					nmt.write( ID + "_%_" + str( counter ).zfill( 3 ) + '\n' + line.strip()[1:].replace( "\t", "   " ) + "\t" )
 					counter += 1
 					seq = []
 				else:
 					seq.append( line.strip() )
 				line = f.readline()
-			out.write( '>' + ID + "_%_" + str( counter ) + '\n' + "".join( seq ) + '\n' )
-			nmt.write( ID + "_%_" + str( counter ) + '\n' )
+			out.write( '>' + ID + "_%_" + str( counter ).zfill( 3 ) + '\n' + "".join( seq ) + '\n' )
+			nmt.write( ID + "_%_" + str( counter ).zfill( 3 ) + '\n' )
 	return output_file
 
 
@@ -91,6 +95,77 @@ def load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, simi
 						valid_blast_hits.update( { parts[1]: { 'gene': parts[0].split('_%_')[0], 'score': float( parts[-1] ) } } )
 			line = f.readline()
 	return valid_blast_hits
+
+
+def  find_sister_in_tree( tree_file ):
+	"""! @brief find sister clade in phylogenetic tree """
+	
+	with open( tree_file, "r" ) as f:
+		tree = f.read()
+	ref_genes = re.findall( "[a-zA-Z0-9_\-]+_%_\d{3}", tree )
+	dist_per_gene = []
+	for gene in ref_genes:
+		parts = tree.split('CANDIDATE')
+		if gene in parts[0]:
+			region = parts[0].split( gene )[1]
+		else:
+			region = parts[1].split( gene )[0]
+		dist_per_gene.append( { 'id': gene, 'dist': region.count( '(' ) + region.count(')') } )
+	return sorted( dist_per_gene, key=itemgetter( 'dist' ) )[0]['id']
+
+
+def tree_based_classification( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff, tree_tmp, fasttree, pxclsq, mafft, peps, ref_seqs ):
+	"""! @brief load BLAST results """
+	
+	final_results = {}
+	# --- get all valid seqs --- #
+	valid_blast_hits = {}
+	with open( blast_result_file, "r" ) as f:
+		line = f.readline()
+		while line:
+			parts = line.strip().split('\t')
+			if float( parts[2] ) > similarity_cutoff:	#similarity is sufficient
+				if float( parts[-1] ) > score_ratio_cutoff * self_scores[ parts[0] ]:	#substantial part of query is matched
+					try:
+						valid_blast_hits[ parts[1] ].append( { 'id': parts[0], 'score': float( parts[-1] ), 'gene': parts[0].split('_%_')[0] } )
+					except KeyError:
+						valid_blast_hits.update( { parts[1]: [ { 'id': parts[0], 'score': float( parts[-1] ), 'gene': parts[0].split('_%_')[0] } ] } )
+			line = f.readline()
+	
+	# --- prepare refseq data --- #
+	ref_seq_seqs = {}
+	ref_seq_ID_to_gene_mapping = {}
+	for value in ref_seqs.values():
+		for entry in value:
+			ref_seq_seqs.update( { entry['id']: entry['seq'] } )	#id or name?
+			ref_seq_ID_to_gene_mapping.update( { entry['id']: entry['gene'] } )
+	 
+	# --- process all valid BLAST results --- #
+	for key in valid_blast_hits.keys():
+		if len( valid_blast_hits[ key ] ) == 1:
+			final_results.update( { key: valid_blast_hits[ key ][0] } )
+		else:
+			# --- build tree --- #
+			seq_file = tree_tmp + key + ".fasta"
+			with open( seq_file, "w" ) as out:
+				out.write( '>CANDIDATE\n' + peps[ key ] + '\n'  )
+				for each in valid_blast_hits[ key ]:
+					out.write( '>' + each['id'] + '\n' + ref_seq_seqs[ each['id'] ] + '\n'  )
+			aln_file = seq_file + ".aln"
+			os.popen( " ".join( [ mafft, seq_file, ">", aln_file ] ) )
+			
+			cln_aln_file = aln_file + ".cln"
+			occupancy = 0.3	#could be implemented as option later
+			os.popen( " ".join( [ pxclsq, "-s", aln_file, "-o", cln_aln_file, "-p", str( occupancy ) ] ) )
+			
+			tree_file = cln_aln_file + ".tree"
+			os.popen( " ".join( [ fasttree, "-wag -nosupport <", cln_aln_file, ">", tree_file ] ) )
+			
+			# --- find reference seqs sister --- #
+			sister = find_sister_in_tree( tree_file )
+			final_results.update( { key: { 'gene': sister.split('_%_')[0] } } )
+	print final_results
+	return final_results
 
 
 def load_sequences( fasta_file ):
@@ -495,6 +570,7 @@ def translate_to_generate_pep_file( peptide_file, subject_name_file, subject, mi
 			for idx, pep in enumerate( peptides ):
 				out.write( '>X' + str( idx ) + '\n' + pep + '\n' )
 				out2.write( "X" + str( idx ) + '\t' + "X" + str( idx ) + '\n' )
+
 
 # --- functions to handle DNA (genome sequence) input --- #
 
@@ -1112,6 +1188,12 @@ def main( arguments ):
 	else:
 		makeblastdb = "makeblastdb"
 	
+	if '--fasttree' in arguments:
+		fasttree = arguments[ arguments.index('--fasttree')+1 ]
+	
+	if '--pxclsq' in arguments:
+		pxclsq = arguments[ arguments.index('--pxclsq')+1 ]
+	
 	if '--cpus' in arguments:
 		cpus = int( arguments[ arguments.index('--cpus')+1 ] )
 	else:
@@ -1153,18 +1235,25 @@ def main( arguments ):
 	else:
 		checks = "on"
 	
+	if '--fasttree' in arguments and '--pxclsq' in arguments:
+		treestatus = True
+		print "INFO: classification of candidates will be based on phylogenetic trees."
+	else:
+		treestatus = False
+		print "INFO: classification of candidates will be based on BLAST hit similarity."
+	
 	errors = validate_input( pos_data_dir, bait_seq_data_dir )
 	if len( errors ) > 0:
 		for error in errors:
 			if error['seq']:
 				if error['len']:
-					print "conserved residue position in sequence " + error['seq'] + " of " + error['gene'] + " exceeds sequence length."
+					print "ERROR: conserved residue position in sequence " + error['seq'] + " of " + error['gene'] + " exceeds sequence length."
 				else:
-					print "conserved residue sequence " + error['seq'] + " of " + error['gene'] + " is not matching bait sequences."
+					print "ERROR: conserved residue sequence " + error['seq'] + " of " + error['gene'] + " is not matching bait sequences."
 			else:
-				print "no conserved residue information detected for " + error['gene'] + "."
+				print "ERROR: no conserved residue information detected for " + error['gene'] + "."
 		if checks == "on":
-			sys.exit( "Execution of script terminated due to errors. Fix errors or set '--checks' to 'off' in order to proceed." )
+			sys.exit( "ERROR: Execution of script terminated due to errors. Fix errors or set '--checks' to 'off' in order to proceed." )
 	
 	if not os.path.exists( output_dir ):
 		os.makedirs( output_dir )
@@ -1173,11 +1262,11 @@ def main( arguments ):
 	peptide_file = output_dir + "subject.fasta"
 	subject_name_file = output_dir + "subject_names.txt"
 	if seqtype == "pep":
-		print "Input sequences are peptides >> candidate detection can start directly."
+		print "INFO: Input sequences are peptides >> candidate detection can start directly."
 		if not os.path.isfile( peptide_file ):
 			generate_subject_file( peptide_file, subject_name_file, subject )
 	elif seqtype == "rna":
-		print "Input sequences are DNA (transcripts expected) >> in silico translation will be performed in all 6 frames ..."
+		print "INFO: Input sequences are DNA (transcripts expected) >> in silico translation will be performed in all 6 frames ..."
 		min_len_cutoff = 50	#minimal number of amino acids to keep a sequence as peptide
 		translate_to_generate_pep_file( peptide_file, subject_name_file, subject, min_len_cutoff )
 	
@@ -1219,18 +1308,27 @@ def main( arguments ):
 		os.popen( blastp + " -query " + query_file + " -db " + self_blast_db + " -out " + self_blast_result_file + " -outfmt 6 -evalue 0.00001 -num_threads " + str( cpus ) )
 	
 	
-	# --- load BLAST results --- #
-	self_scores = load_self_BLAST_hit_scores( self_blast_result_file )
-	blast_hits = load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff )
+	# --- load sequence data --- #
+	peps = load_sequences( peptide_file )	#target peptide sequences
+	ref_seqs = load_ref_seqs( query_file, name_mapping_table )
 	
+	
+	# --- load BLAST results or classify based on phylogenetic tree --- #
+	self_scores = load_self_BLAST_hit_scores( self_blast_result_file )
+	if treestatus:
+		tree_tmp = output_dir + "tree_tmp/"
+		if not os.path.exists( tree_tmp ):
+			os.makedirs( tree_tmp )
+		blast_hits = tree_based_classification( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff,
+																		tree_tmp, fasttree, pxclsq, mafft, peps, ref_seqs
+																		)
+	else:
+		blast_hits = load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff )
 	
 	# --- analyse candidates in global alignments --- #
 	tmp_dir = output_dir + "tmp/"
 	if not os.path.exists( tmp_dir ):
 		os.makedirs( tmp_dir )
-	peps = load_sequences( peptide_file )
-	ref_seqs = load_ref_seqs( query_file, name_mapping_table )
-	
 	
 	alignment_per_candidate, sim_matrix_per_gene, candidates_by_gene = generate_global_alignments( mafft, peps, blast_hits, tmp_dir, ref_seqs )
 	sim_matrix_folder = output_dir + "similarity_matrix/"
