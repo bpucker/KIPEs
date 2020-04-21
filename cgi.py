@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-### v0.181 ###
+### v0.183 ###
 
 __usage__ = """
 					python cgi.py
@@ -832,7 +832,7 @@ def construct_pep_seq( parts, seq, genetic_code, qlen, qpep, tmp_folder, mafft )
 		elif idx == len( parts )-1:
 			#direct hit next to previous one
 			if parts[idx-1]['qend']+1 == part['qstart']:
-				seq_parts.append( "NNN" )
+				#seq_parts.append( "NNN" )
 				#alignment until end
 				if part['qend'] == qlen:
 					seq_parts.append( seq[ part['sstart']-1:part['send']+3 ] )
@@ -847,7 +847,7 @@ def construct_pep_seq( parts, seq, genetic_code, qlen, qpep, tmp_folder, mafft )
 						seq_parts.append( seq[ part['sstart']-1:part['send'] ] )
 			#gap to previous coding exon hit
 			elif parts[idx-1]['qend']+1 < part['qstart']:
-				seq_parts.append( "NNNNNN" )
+				#seq_parts.append( "NNNNNN" )
 				missing_seq = find_missing_seq_between_hits( 	qpep[ parts[idx-1]['qend']+1:part['qstart']+1 ],	#missing amino acids
 																									seq[ parts[idx-1]['send']: part['sstart'] ],	#corresponding DNA sequence																									
 																									genetic_code, tmp_folder, mafft
@@ -866,7 +866,7 @@ def construct_pep_seq( parts, seq, genetic_code, qlen, qpep, tmp_folder, mafft )
 						seq_parts.append( missing_seq + seq[ part['sstart']-1:part['send'] ] )
 			#overlap with previous coding exon
 			else:
-				seq_parts.append( "NNNNNNNNN" )
+				#seq_parts.append( "NNNNNNNNN" )
 				#alignment until end
 				if part['qend'] == qlen:
 					seq_parts.append( seq[ part['sstart']-1+3*(1+parts[idx-1]['qend']-part['qstart']):part['send']+3 ] )
@@ -884,13 +884,13 @@ def construct_pep_seq( parts, seq, genetic_code, qlen, qpep, tmp_folder, mafft )
 		else:
 			#direct hit next to previous one
 			if parts[idx-1]['qend']+1 == part['qstart']:
-				seq_parts.append( "NNN" )
+				#seq_parts.append( "NNN" )
 				### ADD SPLICE SITE CHECK
 				seq_parts.append( seq[ part['sstart']-1:part['send'] ] )
 			
 			#gap
 			elif parts[idx-1]['qend']+1 < part['qstart']:
-				seq_parts.append( "NNNNNN" )
+				#seq_parts.append( "NNNNNN" )
 				# --- search for missing sequence --- #
 				missing_seq = find_missing_seq_between_hits( 	qpep[ parts[idx-1]['qend']+1:part['qstart']+1 ],	#missing amino acids
 																									seq[ parts[idx-1]['send']: part['sstart'] ],	#corresponding DNA sequence																									
@@ -900,7 +900,7 @@ def construct_pep_seq( parts, seq, genetic_code, qlen, qpep, tmp_folder, mafft )
 			
 			#overlap
 			else:
-				seq_parts.append( "NNNNNNNNN" )
+				#seq_parts.append( "NNNNNNNNN" )
 				seq_parts.append( seq[ part['sstart']-1+3*(1+parts[idx-1]['qend']-part['qstart']):part['send'] ] )
 			
 	#find start M
@@ -1050,7 +1050,7 @@ def validate_input( pos_data_dir, bait_seq_data_dir ):
 	fasta_files = glob.glob( bait_seq_data_dir + "*.fa" ) + glob.glob( bait_seq_data_dir + "*.fasta" )
 	baits = {}
 	for fasta in fasta_files:
-		baits.update( { fasta.split(('/')[-1].split('.')[0]: load_sequences( fasta ) } )
+		baits.update( { fasta.split('/')[-1].split('.')[0]: load_sequences( fasta ) } )
 	errors = []
 	for filename in pos_data_files:
 		ID = filename.split('/')[-1].split('.')[0]
@@ -1075,9 +1075,14 @@ def main( arguments ):
 	"""! @brief run everything """
 	
 	bait_seq_data_dir = arguments[ arguments.index('--baits')+1 ]
-	pos_data_dir = arguments[ arguments.index('--positions')+1 ]
+	
 	output_dir = arguments[ arguments.index('--out')+1 ]
 	subject = arguments[ arguments.index('--subject')+1 ]
+	
+	if '--positions' in arguments:
+		pos_data_dir = arguments[ arguments.index('--positions')+1 ]
+	else:
+		pos_data_dir = ""
 	
 	if '--seqtype' in arguments:
 		seqtype = arguments[ arguments.index('--seqtype')+1 ]
@@ -1260,7 +1265,7 @@ def main( arguments ):
 #build phylogenetic tree with landmark sequences
 
 
-if '--baits' in sys.argv and '--positions' in sys.argv and '--out' in sys.argv and '--subject' in sys.argv:
+if '--baits' in sys.argv and '--out' in sys.argv and '--subject' in sys.argv:
 	main( sys.argv )
 else:
 	sys.exit( __usage__ )
