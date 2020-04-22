@@ -54,27 +54,30 @@ Usage:
 
 Mandatory:
   Bait sequences
-  --baits STR        Directory with (multiple) FASTA files. 
+  --baits          STR    Directory with (multiple) FASTA files. 
   
   Output directory
-  --out STR          Output directory
+  --out            STR    Output directory
 
   Input sequences
-  --subject STR      Multiple FASTA file with sequences to screen.
+  --subject        STR    Multiple FASTA file with sequences to screen.
 		
 Optional:
-  --positions STR    Directory with text files (one per gene).
-  --seqtype STR      Defines type of input sequence (pep|rna|dna)[pep]
+  --positions      STR    Directory with text files (one per gene).
+  --seqtype        STR    Defines type of input sequence (pep|rna|dna)[pep]
  
-  --cpus INT         Number of threads in BLAST runs [10]
-  --scoreratio FLOAT BLAST score ratio of self vs. input sequences [0.3]
-  --simcut FLOAT     Minimal similarity of BLAST hits [40.0]
-  --checks           Validation of input data (on|off)[on]
+  --cpus           INT    Number of threads in BLAST runs [10]
+  --scoreratio     FLOAT  BLAST score ratio of self vs. input sequences [0.3]
+  --simcut         FLOAT  Minimal similarity of BLAST hits [40.0]
+  --checks         STR    Validation of input data (on|off)[on]
    
-  --mafft STR         Full path to MAFFT (if not in your $PATH)
-  --blastp STR        Full path to the BLASTp binary (if not in your $PATH)
-  --tblastn STR       Full path to the tBLASTn binary (if not in your $PATH)
-  --makeblastdb STR   Full path to the makeblastdb binary (if not in your $PATH)
+  --mafft          STR    Full path to MAFFT (if not in your $PATH)
+  --blastp         STR    Full path to the BLASTp binary (if not in your $PATH)
+  --tblastn        STR    Full path to the tBLASTn binary (if not in your $PATH)
+  --makeblastdb    STR    Full path to the makeblastdb binary (if not in your $PATH)
+  
+  --fasttree       STR    Full path to the FastTree binary
+  --pxclsq         STR    Full path to the pxclsq binary
 ```
 
 `--baits` is the full path to a folder containing (mutliple) FASTA files. The filename needs to match the gene name. Extension should be '.fasta' or '.fa'.
@@ -104,7 +107,14 @@ AtCHS	R13	Q16	R17
 
 `--makeblastdb` full path to makeblastdb binary if this is not included in $PATH.
 
+`--fasttree` full path to FastTree binary. If this option an `--pxclsq` are set, a phylogenetic tree is used to classify candidate sequences.
 
+`--pxclsq` full path to pxclsq binary. If this option an `--fasttree` are set, a phylogenetic tree is used to classify candidate sequences.
+
+
+  
+  
+  
 
 ### Generating tables of conserved residues
 
