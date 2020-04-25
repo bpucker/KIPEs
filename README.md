@@ -137,6 +137,26 @@ Optional:
 ```
 
 
+  
+
+### Identification of residues for classification
+
+In order to differentiate between enzymes with high sequence similarity (e.g. CHS, STS, and LAP5), known sequences of each type can be collected in a multiple FASTA file. This scripts allows the identification of residues which differentiate sequences of the different types. 
+
+```
+Usage:
+  python find_contrasting_residues.py --in <FILE> --out <DIR> --ref <STRING> --pos <STRING> --neg <STRING>
+
+Mandatory:
+  --in STR          A multiple FASTA file. 
+  --out STR         Directory for temporary and output files.
+  --ref STR         Name of the reference sequence.
+  --pos STR         Comma-separated names of sequences (white list).
+  --neg STR         Comma-separated names of sequences (black list).
+```
+
+
+
 ## Limitations and outlook
 
 As this tool is an automatic identification pipeline for candidate genes, the resolution of this analysis might be inferior to a manual annotation in certain cases like ODDs (F3H, FLS, LDOX). Therefore, it is recommended to carefully inspect the results from this pipeline. Generally, the quality of results is depending on the input quality. This pipeline was developed for the annotation of genes in the flavonoid biosynthesis of plants, but could be applied to other pathways if sufficient information is available.
