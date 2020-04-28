@@ -1,13 +1,13 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-### v0.19 ###
+### v0.2 ###
 
 __usage__ = """
 					python KIPEs.py
 					--baits <FOLDER_WITH_BAIT_SEQ_FILES>
 					--positions <FOLDER_WITH_POSITION_FILES>
 					--out <OUTPUT_DIR>
-					--subject <SUBJECT_FILE (peptide,transcript,genomic sequences)>
+					--subject <SUBJECT_FILE (peptide,transcript,genomic sequences)> | --subjectdir <SUBJECT_FOLDER_WITH_SEQ_FILES>
 					
 					optional:
 					--seqtype <TYPE_OF_SUBJECT_SEQUENCES(pep|rna|dna)>[pep]
@@ -1151,100 +1151,8 @@ def validate_input( pos_data_dir, bait_seq_data_dir ):
 	return errors
 
 
-def main( arguments ):
-	"""! @brief run everything """
-	
-	bait_seq_data_dir = arguments[ arguments.index('--baits')+1 ]
-	
-	output_dir = arguments[ arguments.index('--out')+1 ]
-	subject = arguments[ arguments.index('--subject')+1 ]
-	
-	if '--positions' in arguments:
-		pos_data_dir = arguments[ arguments.index('--positions')+1 ]
-	else:
-		pos_data_dir = ""
-	
-	if '--seqtype' in arguments:
-		seqtype = arguments[ arguments.index('--seqtype')+1 ]
-		#pep = peptide collection
-		#rna = transcriptome sequence
-		#dna = genome sequence
-	else:
-		seqtype = "pep"
-	
-	if '--mafft' in arguments:
-		mafft = arguments[ arguments.index('--mafft')+1 ]
-	else:
-		mafft = "mafft"
-	
-	if '--blastp' in arguments:
-		blastp = arguments[ arguments.index('--blastp')+1 ]
-	else:
-		blastp = "blastp"
-	
-	if '--tblastn' in arguments:
-		tblastn = arguments[ arguments.index('--tblastn')+1 ]
-	else:
-		tblastn = "tblastn"
-	
-	if '--makeblastdb' in arguments:
-		makeblastdb = arguments[ arguments.index('--makeblastdb')+1 ]
-	else:
-		makeblastdb = "makeblastdb"
-	
-	if '--fasttree' in arguments:
-		fasttree = arguments[ arguments.index('--fasttree')+1 ]
-	
-	if '--pxclsq' in arguments:
-		pxclsq = arguments[ arguments.index('--pxclsq')+1 ]
-	
-	if '--cpus' in arguments:
-		cpus = int( arguments[ arguments.index('--cpus')+1 ] )
-	else:
-		cpus = 10
-	
-	# --- parameters for filtering of BLAST results --- #
-	if '--scoreratio' in arguments:
-		score_ratio_cutoff = float( arguments[ arguments.index('--scoreratio')+1 ] )
-	else:	
-		score_ratio_cutoff = 0.3
-	
-	if '--simcut' in arguments:
-		similarity_cutoff = float( arguments[ arguments.index('--simcut')+1 ] )
-	else:
-		similarity_cutoff = 40.0	#value in percent
-	
-	if '--genesize' in arguments:
-		max_gene_size = int( arguments[ arguments.index('--genesize')+1 ] )
-	else:
-		max_gene_size = 5000
-	
-	if '--minsim' in arguments:
-		xsimcut = float( arguments[ arguments.index('--minsim')+1 ] )
-	else:
-		xsimcut = 0.4	#minimal similarity in global alignment to keep candidate
-	
-	if '--minres' in arguments:
-		xconsrescut = float( arguments[ arguments.index('--minres')+1 ] )
-	else:
-		xconsrescut = -1	#minimal ratio of conserved residues to keep candidate
-	
-	if '--minreg' in arguments:
-		xconsregcut = float( arguments[ arguments.index('--minreg')+1 ] )
-	else:
-		xconsregcut = -1	#minimal similarity of conserved regions to keep candidate (deactivated by default)
-	
-	if '--checks' in arguments:
-		checks = arguments[ arguments.index('--checks')+1 ]
-	else:
-		checks = "on"
-	
-	if '--fasttree' in arguments and '--pxclsq' in arguments:
-		treestatus = True
-		print "INFO: classification of candidates will be based on phylogenetic trees."
-	else:
-		treestatus = False
-		print "INFO: classification of candidates will be based on BLAST hit similarity."
+def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pxclsq, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, treestatus ):
+	"""! @brief run whole KIPEs analysis for one subject sequence file """
 	
 	errors = validate_input( pos_data_dir, bait_seq_data_dir )
 	if len( errors ) > 0:
@@ -1364,10 +1272,141 @@ def main( arguments ):
 	summary_file = output_dir + "summary.txt"
 	summary = generate_final_pep_files( peps, final_pep_folder, candidates_by_gene, xsimcut, xconsrescut, xconsregcut, sim_per_pep, cons_pos_per_pep, cons_reg_per_pep, summary_file, subject_name_mapping_table )
 
-#build phylogenetic tree with landmark sequences
+	#build phylogenetic tree with landmark sequences
+
+
+def main( arguments ):
+	"""! @brief run everything """
+	
+	bait_seq_data_dir = arguments[ arguments.index('--baits')+1 ]
+	
+	if '--subjectdir' in arguments:
+		subject_dir = arguments[ arguments.index('--subjectdir')+1 ]
+		subjects = glob.glob( subject_dir + "*.faa" ) + glob.glob( subject_dir + "*.fa" ) + glob.glob( subject_dir + "*.fasta" )
+		output_dir = arguments[ arguments.index('--out')+1 ]
+		if output_dir[-1] != '/':
+			output_dir += "/"
+		output_dirs = []
+		for subject in subjects:
+			ID = subject.split('/')[-1].split('.')[0]
+			output_dirs.append( output_dir + ID + '/' )
+	else:
+		subjects = [ arguments[ arguments.index('--subject')+1 ] ]
+		output_dirs = [ arguments[ arguments.index('--out')+1 ] ]
+	
+	if '--positions' in arguments:
+		pos_data_dir = arguments[ arguments.index('--positions')+1 ]
+	else:
+		pos_data_dir = ""
+	
+	if '--seqtype' in arguments:
+		seqtype = arguments[ arguments.index('--seqtype')+1 ]
+		#pep = peptide collection
+		#rna = transcriptome sequence
+		#dna = genome sequence
+	else:
+		seqtype = "pep"
+	
+	if '--mafft' in arguments:
+		mafft = arguments[ arguments.index('--mafft')+1 ]
+	else:
+		mafft = "mafft"
+	
+	if '--blastp' in arguments:
+		blastp = arguments[ arguments.index('--blastp')+1 ]
+	else:
+		blastp = "blastp"
+	
+	if '--tblastn' in arguments:
+		tblastn = arguments[ arguments.index('--tblastn')+1 ]
+	else:
+		tblastn = "tblastn"
+	
+	if '--makeblastdb' in arguments:
+		makeblastdb = arguments[ arguments.index('--makeblastdb')+1 ]
+	else:
+		makeblastdb = "makeblastdb"
+	
+	if '--fasttree' in arguments:
+		fasttree = arguments[ arguments.index('--fasttree')+1 ]
+	
+	if '--pxclsq' in arguments:
+		pxclsq = arguments[ arguments.index('--pxclsq')+1 ]
+	
+	if '--cpus' in arguments:
+		cpus = int( arguments[ arguments.index('--cpus')+1 ] )
+	else:
+		cpus = 10
+	
+	# --- parameters for filtering of BLAST results --- #
+	if '--scoreratio' in arguments:
+		score_ratio_cutoff = float( arguments[ arguments.index('--scoreratio')+1 ] )
+	else:	
+		score_ratio_cutoff = 0.3
+	
+	if '--simcut' in arguments:
+		similarity_cutoff = float( arguments[ arguments.index('--simcut')+1 ] )
+	else:
+		similarity_cutoff = 40.0	#value in percent
+	
+	if '--genesize' in arguments:
+		max_gene_size = int( arguments[ arguments.index('--genesize')+1 ] )
+	else:
+		max_gene_size = 5000
+	
+	if '--minsim' in arguments:
+		xsimcut = float( arguments[ arguments.index('--minsim')+1 ] )
+	else:
+		xsimcut = 0.4	#minimal similarity in global alignment to keep candidate
+	
+	if '--minres' in arguments:
+		xconsrescut = float( arguments[ arguments.index('--minres')+1 ] )
+	else:
+		xconsrescut = -1	#minimal ratio of conserved residues to keep candidate
+	
+	if '--minreg' in arguments:
+		xconsregcut = float( arguments[ arguments.index('--minreg')+1 ] )
+	else:
+		xconsregcut = -1	#minimal similarity of conserved regions to keep candidate (deactivated by default)
+	
+	if '--checks' in arguments:
+		checks = arguments[ arguments.index('--checks')+1 ]
+	else:
+		checks = "on"
+	
+	if '--fasttree' in arguments and '--pxclsq' in arguments:
+		treestatus = True
+		print "INFO: classification of candidates will be based on phylogenetic trees."
+	else:
+		treestatus = False
+		print "INFO: classification of candidates will be based on BLAST hit similarity."
+	
+	
+	### dependency checks ###
+	#dependency check!! blastp, makeblastdb, tblastn, mafft, pxclsq, fasttree
+	
+	for subject in subjects:
+		if not os.path.isfile( subject ):
+			print "ERROR: subject file not detected: " + subject
+	
+	if not os.path.exists( bait_seq_data_dir ):
+		sys.exit( "ERROR: bait sequence folder not detected!" )
+	
+	time.sleep( 10 )
+	
+	# --- run KIPEs for each supplied subject file --- #
+	print "number of subjects to process: " + str( len( subjects ) )
+	for xxx, subject in enumerate( subjects ):
+		KIPEs( 	bait_seq_data_dir, output_dirs[ xxx ], subject, pos_data_dir, seqtype,
+					mafft, blastp, tblastn, makeblastdb, fasttree, pxclsq,
+					cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size,
+					xsimcut, xconsrescut, xconsregcut, checks, treestatus 
+				)
 
 
 if '--baits' in sys.argv and '--out' in sys.argv and '--subject' in sys.argv:
+	main( sys.argv )
+elif '--baits' in sys.argv and '--out' in sys.argv and '--subjectdir' in sys.argv:
 	main( sys.argv )
 else:
 	sys.exit( __usage__ )
