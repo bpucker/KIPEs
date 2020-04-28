@@ -1,4 +1,4 @@
-# CGI (Candidate Gene Identificatory)
+# KIPEs (Knowledge-based Identification of Pathway Enzymes)
 
 ## Abstract
 
@@ -46,11 +46,11 @@ The output format of this analysis of conserved regions matches the output forma
 Full paths should be used to specify input and output files and folders. Sequence names should not contain white space characters like spaces and TABs. Underscores can be used to replace spaces.
 
 
-### Running the main function (CGI)
+### Running the main function (KIPEs)
 
 ```
 Usage:
-  python CGI.py --baits <DIR> --out <DIR> --subject <FILE>
+  python KIPEs.py --baits <DIR> --out <DIR> --subject <FILE>
 
 Mandatory:
   Bait sequences
