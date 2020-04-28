@@ -51,6 +51,8 @@ Full paths should be used to specify input and output files and folders. Sequenc
 ```
 Usage:
   python KIPEs.py --baits <DIR> --out <DIR> --subject <FILE>
+  or
+  python KIPEs.py --baits <DIR> --out <DIR> --subjectdir <DIR>
 
 Mandatory:
   Bait sequences
@@ -61,6 +63,7 @@ Mandatory:
 
   Input sequences
   --subject        STR    Multiple FASTA file with sequences to screen.
+  --subjectdir     STR    Directory containing multiple FASTA file with sequences to screen.
 		
 Optional:
   --positions      STR    Directory with text files (one per gene).
