@@ -163,4 +163,9 @@ As this tool is an automatic identification pipeline for candidate genes, the re
 
 ## References
 
+BLAST: https://doi.org/10.1016/S0022-2836(05)80360-2
+
+MAFFT: https://doi.org/10.1093/molbev/mst010
+
+FastTree2: https://doi.org/10.1371/journal.pone.0009490
 
