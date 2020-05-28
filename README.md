@@ -80,7 +80,6 @@ Optional:
   --makeblastdb    STR    Full path to the makeblastdb binary (if not in your $PATH)
   
   --fasttree       STR    Full path to the FastTree binary
-  --pxclsq         STR    Full path to the pxclsq binary
 ```
 
 `--baits` is the full path to a folder containing (mutliple) FASTA files. The filename needs to match the gene name. Extension should be '.fasta' or '.fa'.
@@ -110,11 +109,7 @@ AtCHS	R13	Q16	R17
 
 `--makeblastdb` full path to makeblastdb binary if this is not included in $PATH.
 
-`--fasttree` full path to FastTree binary. If this option an `--pxclsq` are set, a phylogenetic tree is used to classify candidate sequences.
-
-`--pxclsq` full path to pxclsq binary. If this option an `--fasttree` are set, a phylogenetic tree is used to classify candidate sequences.
-
-
+`--fasttree` full path to FastTree binary. If this option is set, a phylogenetic tree is used to classify candidate sequences. FastTree can be downloaded as a single binary file here: http://www.microbesonline.org/fasttree/ .
   
   
   
