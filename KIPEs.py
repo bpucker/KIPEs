@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-### v0.2 ###
+### v0.25 ###
 
 __usage__ = """
 					python KIPEs.py
@@ -19,6 +19,7 @@ __usage__ = """
 					--minsim <FLOAT, MINIMAL_SIMILARITY_IN_GLOBAL_ALIGNMENT>[0.4]
 					--minres <FLOAT, MINIMAL_PROPORTION_OF_CONSERVED_RESIDUES>[off]
 					--minreg <FLOAT, MINIMAL_PROPORTION_OF_CONSERVED_REGIONS>[off]
+					--pathway <TEXT_FILE_SPECIFYING_GENE_ORDER>
 					
 					--mafft <PATH_TO_MAFFT>[mafft]
 					--blastp <PATH_TO_AND_INCLUDING_BINARY>[blastp]
@@ -26,7 +27,6 @@ __usage__ = """
 					--makeblastdb <PATH_TO_AND_INCLUDING_BINARY>[makeblastdb]
 					
 					--fasttree <PATH_TO_FASTTREE>
-					--pxclsq <PATH_TO_pxclsq>
 					
 					bug reports and feature requests: bpucker@cebitec.uni-bielefeld.de
 					"""
@@ -118,7 +118,37 @@ def  find_sister_in_tree( tree_file ):
 		return False
 
 
-def tree_based_classification( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff, tree_tmp, fasttree, pxclsq, mafft, peps, ref_seqs ):
+def alignment_trimming( aln_file, cln_aln_file, occupancy ):
+	"""! @brief remove all alignment columns with insufficient occupancy """
+	
+	alignment = load_alignment( aln_file, {} )
+	# --- if there is an alignment (expected case) 
+	if len( alignment.keys() ) > 0:
+		# --- identify valid residues in aligned sequences (columns with sufficient occupancy) --- #
+		valid_index = []
+		for idx, aa in enumerate( alignment.values()[0] ):
+			counter = 0
+			for key in alignment.keys():
+				if alignment[ key ][ idx ] != "-":
+					counter += 1
+			if counter / float( len( alignment.keys() ) ) > occupancy:
+				valid_index.append( idx )
+		
+		# --- generate new sequences --- #
+		with open( cln_aln_file, "w" ) as out:
+			for key in alignment.keys():
+				seq = alignment[ key ]
+				new_seq = []
+				for idx in valid_index:
+					new_seq.append( seq[ idx ] )
+				out.write( ">" + key + '\n' + "".join( new_seq ) + '\n' )
+	# --- just in case the alignment file is empyt (is this possible?) ---#
+	else:
+		with open( cln_aln_file, "w" ) as out:
+			out.write( "" )
+
+
+def tree_based_classification( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff, tree_tmp, fasttree, mafft, peps, ref_seqs ):
 	"""! @brief load BLAST results """
 	
 	final_results = {}
@@ -160,7 +190,7 @@ def tree_based_classification( blast_result_file, self_scores, score_ratio_cutof
 			
 			cln_aln_file = aln_file + ".cln"
 			occupancy = 0.3	#could be implemented as option later
-			os.popen( " ".join( [ pxclsq, "-s", aln_file, "-o", cln_aln_file, "-p", str( occupancy ) ] ) )
+			alignment_trimming( aln_file, cln_aln_file, occupancy )
 			
 			tree_file = cln_aln_file + ".tree"
 			os.popen( " ".join( [ fasttree, "-wag -nosupport <", cln_aln_file, ">", tree_file ] ) )
@@ -179,12 +209,20 @@ def load_sequences( fasta_file ):
 	
 	with open( fasta_file ) as f:
 		header = f.readline()[1:].strip()
+		# if " " in header:
+			# header = header.split(' ')[0]
+			# if "\t" in header:
+				# header = header.split('\t')[0]
 		seq = []
 		line = f.readline()
 		while line:
 			if line[0] == '>':
 					sequences.update( { header: "".join( seq ) } )
 					header = line.strip()[1:]
+					# if " " in header:
+						# header = header.split(' ')[0]
+						# if "\t" in header:
+							# header = header.split('\t')[0]
 					seq = []
 			else:
 				seq.append( line.strip() )
@@ -382,16 +420,19 @@ def check_alignment_for_cons_res( can_aln, ref_aln, residues ):
 	"""! @brief inspect alignment of candidate at conserved residue positions """
 	
 	results = []
+	extra_results = []
 	for res in residues:
 		alignment_pos = get_alignment_pos( ref_aln, res['pos']-1 )
 		results.append( can_aln[ alignment_pos ] == res['aa'] )
-	return results
+		extra_results.append( can_aln[ alignment_pos ] )
+	return results, extra_results
 
 
 def check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_candidate, candidates_by_gene, subject_name_mapping_table ):
 	"""! @brief check all candidate sequences for conserved residues and generate result tables """
 	
 	cons_pos_per_pep = {}
+	cons_pos_per_pep_extra = {}
 	for gene in candidates_by_gene.keys():
 		candidates = candidates_by_gene[ gene ]
 		try:
@@ -404,15 +445,17 @@ def check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_can
 					header.append( each['aa'] + str( each['pos'] ) )
 				out.write( "\t".join( header ) + '\n' )
 				for candidate in candidates:
-					print "gene: " + gene
+					print "gene: " + gene + "\t" + info['seq']
+					print alignment_per_candidate[ candidate ]
 					can_aln = alignment_per_candidate[ candidate ][ candidate ]
 					ref_aln = alignment_per_candidate[ candidate ][ info['seq'] ]
-					results = check_alignment_for_cons_res( can_aln, ref_aln, residues )
+					results, extra_results = check_alignment_for_cons_res( can_aln, ref_aln, residues )
 					out.write( "\t".join( map( str, [ subject_name_mapping_table[ candidate ] ] + results  ) ) + '\n' )
-					cons_pos_per_pep.update( { candidate: sum( results ) / len( results ) } )
+					cons_pos_per_pep.update( { candidate: 100.0*sum( results ) / len( results ) } )
+					cons_pos_per_pep_extra.update( { candidate: extra_results } )
 		except KeyError:
 			print "no information (conserved residues) available about gene: " + gene
-	return cons_pos_per_pep
+	return cons_pos_per_pep, cons_pos_per_pep_extra
 
 
 def check_alignment_for_cons_reg( can_aln, ref_aln, regions ):
@@ -451,7 +494,7 @@ def check_cons_reg( cons_reg_matrix_folder, regions_per_gene, alignment_per_cand
 					ref_aln = alignment_per_candidate[ candidate ][ info['seq'] ]
 					results = check_alignment_for_cons_reg( can_aln, ref_aln, regions )
 					out.write( "\t".join( map( str, [ subject_name_mapping_table[ candidate ] ] + results  ) ) + '\n' )
-					cons_reg_per_pep.update( { candidate: sum( results ) / len( results ) } )
+					cons_reg_per_pep.update( { candidate: 100.0*sum( results ) / len( results ) } )
 		except KeyError:
 			print "no information (conserved regions) available about gene: " + gene
 	return cons_reg_per_pep
@@ -1082,10 +1125,12 @@ def generate_final_pep_files( 	peps, final_pep_folder, candidates_by_gene,
 	"""! @brief generate multiple FASTA files per gene for all candidates passing the filter """
 	
 	complete_summary = []
+	final_file_per_gene = {}
 	with open( summary_file, "w") as summary:
 		summary.write( "ID\tGene\tSimilarity\tConservedResidues\tConservedRegions\n" )
 		for gene in candidates_by_gene.keys():
 			output_file = final_pep_folder + gene + ".fasta"
+			final_file_per_gene.update( { gene: output_file } )
 			with open( output_file, "w" ) as out:
 				candidates = candidates_by_gene[ gene ]
 				values_for_sorting = []
@@ -1104,11 +1149,12 @@ def generate_final_pep_files( 	peps, final_pep_folder, candidates_by_gene,
 						preg = 0
 					
 					values_for_sorting.append( { 	'id': candidate,
-																			'sim': psim,
-																			'res': pres,
-																			'reg': preg,
-																			'gene': gene
-																		} )
+																		'sim': psim,
+																		'res': pres,
+																		'reg': preg,
+																		'gene': gene,
+																		'label': subject_name_mapping_table[ candidate ]
+																	} )
 				values_for_sorting = sorted( values_for_sorting, key=itemgetter('res', 'reg', 'sim') )[::-1]
 				complete_summary += values_for_sorting
 				for y, candidate in enumerate( values_for_sorting ):
@@ -1120,7 +1166,7 @@ def generate_final_pep_files( 	peps, final_pep_folder, candidates_by_gene,
 																						candidate['res'],
 																						candidate['reg']																						
 																					] ) ) + '\n' )
-	return complete_summary
+	return complete_summary, final_file_per_gene
 
 
 def validate_input( pos_data_dir, bait_seq_data_dir ):
@@ -1151,7 +1197,82 @@ def validate_input( pos_data_dir, bait_seq_data_dir ):
 	return errors
 
 
-def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pxclsq, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, treestatus ):
+def get_pathway( pathway_file, candidates_by_gene ):
+	"""! @brief load order of genes from given pathway file """
+	
+	# --- load file content if any --- #
+	if os.path.isfile( pathway_file ):
+		with open( pathway_file, "r" ) as f:
+			pathway = f.read().strip().split('\n')
+	else:
+		pathway = []
+	
+	# --- check for existence of genes and completeness of gene list --- #
+	final_pathway = []
+	for gene in pathway:
+		try:
+			candidates_by_gene[ gene ]
+			final_pathway.append( gene )
+		except KeyError:
+			print "ERROR: gene specified in pathway file was not investigated (baits missing) - " + gene
+	
+	for gene in candidates_by_gene.keys():
+		if gene not in final_pathway:
+			final_pathway.append( gene )
+	return final_pathway
+
+
+def generate_summary_html( html_file, summary, final_file_per_gene, cons_pos_per_pep_extra, pathway, pos_data_per_gene ):
+	"""! @brief generate final summary HTML """
+	
+	#cons_pos_per_pep_extra = { 'pep1': [ A, T, A, S, -, T, S, -, -, - ], 'pep2': [ A, S, A, S, T, -, - ] }	contains residues at key positions
+	#summary = [ { 'id': candidate, 'sim': psim, 'res': pres, 'reg': preg, 'gene': gene, 'label': subject_name_mapping_table[ candidate ] }, {...}, ... ]
+	#supply pathway file for order of genes in output => additional input file required
+	
+	# --- preparing data and final filtering --- #
+	entry_order = []
+	status_per_gene = {}
+	for gene in pathway:
+		for entry in summary:
+			if entry['gene'] == gene:
+				try:
+					status_per_gene[ gene ]
+					if entry['res'] == 100.0:
+						entry_order.append( entry )
+				except KeyError:
+					entry_order.append( entry )
+					status_per_gene.update( { gene: True } )	#only take perfect hits (or best hit if no perfect hit available)
+	
+	# --- generate HTML file --- #
+	#Gene		SeqID	Similarity	Residues		LinkToData
+	with open( html_file, "w" ) as out:
+		out.write( "<h1>SUMMARY</h1>\n<table>\n<tr> <th>Gene</th><th>SeqID</th><th>Similarity</th><th>Residues</th><th>SequenceFile</th> </tr>" )
+		for entry in entry_order:
+			new_line = []
+			new_line.append( "<td>" + entry['gene'] + "</td>" )	#gene name (function in pathway)
+			new_line.append( "<td>" + entry['label'] + "</td>" )	#sequence ID
+			new_line.append( "<td>" + str( entry['sim'] ) + "%</td>" )	#sequence ID
+			
+			try:
+				residues_per_gene = pos_data_per_gene[ entry['gene'] ]['residues']	#[ { 'aa': X, 'pos': int( res[1:] ) }, { 'aa': X, 'pos': int( res[1:] ) }, ...]
+				present_residues = cons_pos_per_pep_extra[ entry['id']  ]
+				tmp_blocks = []
+				for zz, residue in enumerate( present_residues ):
+					if residues_per_gene[ zz ]['aa'] == residue:	#match (conserved residue)
+						tmp_blocks.append( residues_per_gene[ zz ]['aa']  + str( residues_per_gene[ zz ]['pos']  ) + residue )
+					else:	#missmatch
+						tmp_blocks.append( '<strong style="color: red;">' + residues_per_gene[ zz ]['aa']  + str( residues_per_gene[ zz ]['pos']  ) + residue + "</strong>" )
+				new_line.append( "<td>" + ", ".join( tmp_blocks ) + "</td>" )
+			except KeyError:
+				new_line.append( "<td>.</td>" )
+			
+			new_line.append( "<td>" + final_file_per_gene[ entry['gene'] ] + "</td>" )	#add link to final peptide files
+			out.write( "<tr>" + "".join( new_line ) + "</tr>\n" )
+		
+		out.write( "</table>\n" )
+
+
+def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, treestatus ):
 	"""! @brief run whole KIPEs analysis for one subject sequence file """
 	
 	errors = validate_input( pos_data_dir, bait_seq_data_dir )
@@ -1167,6 +1288,16 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 		if checks == "on":
 			sys.exit( "ERROR: Execution of script terminated due to errors. Fix errors or set '--checks' to 'off' in order to proceed." )
 	
+	if output_dir[-1] != "/":
+		output_dir += "/"
+	
+	if len( pos_data_dir ) > 0:
+		if pos_data_dir[-1] != "/":
+			pos_data_dir += "/"
+	
+	if bait_seq_data_dir[-1] != "/":
+		bait_seq_data_dir += "/"
+		
 	if not os.path.exists( output_dir ):
 		os.makedirs( output_dir )
 	
@@ -1232,7 +1363,7 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 		if not os.path.exists( tree_tmp ):
 			os.makedirs( tree_tmp )
 		blast_hits = tree_based_classification( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff,
-																		tree_tmp, fasttree, pxclsq, mafft, peps, ref_seqs
+																		tree_tmp, fasttree, mafft, peps, ref_seqs
 																		)
 	else:
 		blast_hits = load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff )
@@ -1250,12 +1381,15 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 	
 	
 	# --- check conserved residues in alignment --- #
-	pos_data_files = glob.glob( pos_data_dir + "*.txt" )
+	if len( pos_data_dir ) > 1:
+		pos_data_files = glob.glob( pos_data_dir + "*.txt" ) + glob.glob( pos_data_dir + "*.res" )
+	else:
+		pos_data_files = []
 	pos_data_per_gene, regions_per_gene = load_pos_data_per_gene( pos_data_files )
 	cons_res_matrix_folder = output_dir + "conserved_residues/"
 	if not os.path.exists( cons_res_matrix_folder ):
 		os.makedirs( cons_res_matrix_folder )
-	cons_pos_per_pep = check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_candidate, candidates_by_gene, subject_name_mapping_table )
+	cons_pos_per_pep, cons_pos_per_pep_extra = check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_candidate, candidates_by_gene, subject_name_mapping_table )
 	
 	
 	# --- check conserved regions in alignment --- #
@@ -1270,7 +1404,13 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 		os.makedirs( final_pep_folder )
 	
 	summary_file = output_dir + "summary.txt"
-	summary = generate_final_pep_files( peps, final_pep_folder, candidates_by_gene, xsimcut, xconsrescut, xconsregcut, sim_per_pep, cons_pos_per_pep, cons_reg_per_pep, summary_file, subject_name_mapping_table )
+	summary, final_file_per_gene = generate_final_pep_files( peps, final_pep_folder, candidates_by_gene, xsimcut, xconsrescut, xconsregcut, sim_per_pep, cons_pos_per_pep, cons_reg_per_pep, summary_file, subject_name_mapping_table )
+	
+	# --- generate summary HTML --- #
+	html_file = output_dir + "SUMMARY.html"
+	
+	pathway = get_pathway( pathway_file, candidates_by_gene )
+	generate_summary_html( html_file, summary, final_file_per_gene, cons_pos_per_pep_extra, pathway, pos_data_per_gene )
 
 	#build phylogenetic tree with landmark sequences
 
@@ -1330,9 +1470,6 @@ def main( arguments ):
 	if '--fasttree' in arguments:
 		fasttree = arguments[ arguments.index('--fasttree')+1 ]
 	
-	if '--pxclsq' in arguments:
-		pxclsq = arguments[ arguments.index('--pxclsq')+1 ]
-	
 	if '--cpus' in arguments:
 		cpus = int( arguments[ arguments.index('--cpus')+1 ] )
 	else:
@@ -1374,16 +1511,20 @@ def main( arguments ):
 	else:
 		checks = "on"
 	
-	if '--fasttree' in arguments and '--pxclsq' in arguments:
+	if '--fasttree' in arguments:
 		treestatus = True
 		print "INFO: classification of candidates will be based on phylogenetic trees."
 	else:
 		treestatus = False
 		print "INFO: classification of candidates will be based on BLAST hit similarity."
 	
+	if '--pathway' in arguments:
+		pathway_file = arguments[ arguments.index('--pathway')+1 ]
+	else:
+		pathway_file = ""
 	
 	### dependency checks ###
-	#dependency check!! blastp, makeblastdb, tblastn, mafft, pxclsq, fasttree
+	#dependency check!! blastp, makeblastdb, tblastn, mafft, fasttree
 	
 	for subject in subjects:
 		if not os.path.isfile( subject ):
@@ -1398,7 +1539,7 @@ def main( arguments ):
 	print "number of subjects to process: " + str( len( subjects ) )
 	for xxx, subject in enumerate( subjects ):
 		KIPEs( 	bait_seq_data_dir, output_dirs[ xxx ], subject, pos_data_dir, seqtype,
-					mafft, blastp, tblastn, makeblastdb, fasttree, pxclsq,
+					mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file,
 					cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size,
 					xsimcut, xconsrescut, xconsregcut, checks, treestatus 
 				)
