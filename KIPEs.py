@@ -382,23 +382,45 @@ def load_pos_data_per_gene( pos_data_files ):
 	for filename in pos_data_files:
 		gene = filename.split('/')[-1].split('.')[0]
 		with open( filename, "r" ) as f:
-			#SEQ_NAME		X1	X2	X3	... X10, ... X100
-			#SEQ_NAME		REGION1,START,END		REGION2,START,END		...
+			#SEQ_NAME
+			#R	X,Y,Z	1
+			#R	X2
+			#R	X3
+			#	... 
+			#R	X10
+			#D	DOMAIN_SEQ	START	END
+			#D	DOMAIN_SEQ	START	END	
+			#...
+			regions = []
+			residues = []
 			line = f.readline()
 			while line:
-				data_row = line.strip().split('\t')
-				if "," in "".join( data_row[1:] ):
-					regions = []
-					for reg in data_row[1:]:
-						parts = reg.split(',')
-						regions.append( { 'name': parts[0], 'start': int( parts[1] ), 'end': int( parts[2] ) } )
-					regions_per_gene.update( { gene: { 'seq': data_row[0], 'regions': regions } } )
-				else:
-					residues = []
-					for res in data_row[1:]:
-						residues.append( { 'aa': res[0], 'pos': int( res[1:] ) } )
-					pos_per_gene.update( { gene: { 'seq': data_row[0], 'residues': residues } } )
+				if line[0] != "#":
+					if line[0] == "!":
+						ref_seq = line.strip()[1:]
+					else:
+						parts = line.strip().split('\t')
+						if len( parts ) > 0:
+							if parts[0] == "D":
+								if len( parts ) > 3:
+									if len( parts ) > 4:
+										comment = "".join( parts[4:] )
+									else:
+										comment = ""
+									regions.append( { 'name': parts[1], 'start': int( parts[2] ), 'end': int( parts[3] ), 'comment': comment } )
+							elif parts[0] == "R":
+								if "," in parts[1]:
+									res = parts[1].split(',')
+								else:
+									res = [ parts[1] ]
+								if len( parts ) > 3:
+									comment = "".join( parts[3:] )
+								else:
+									comment = ""
+								residues.append( { 'aa': res, 'pos': int( parts[2] ), 'comment': comment } )		
 				line = f.readline()
+			regions_per_gene.update( { gene: { 'seq': ref_seq, 'regions': regions } } )
+			pos_per_gene.update( { gene: { 'seq': ref_seq, 'residues': residues } } )
 	return pos_per_gene, regions_per_gene
 
 
@@ -423,7 +445,7 @@ def check_alignment_for_cons_res( can_aln, ref_aln, residues ):
 	extra_results = []
 	for res in residues:
 		alignment_pos = get_alignment_pos( ref_aln, res['pos']-1 )
-		results.append( can_aln[ alignment_pos ] == res['aa'] )
+		results.append( can_aln[ alignment_pos ] in res['aa'] )	#multiple different amino acids might be permitted at one position
 		extra_results.append( can_aln[ alignment_pos ] )
 	return results, extra_results
 
@@ -442,11 +464,11 @@ def check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_can
 			with open( output_file, "w" ) as out:
 				header = [ "candidate" ]
 				for each in residues:
-					header.append( each['aa'] + str( each['pos'] ) )
+					header.append( "/".join( each['aa'] ) + str( each['pos'] ) )
 				out.write( "\t".join( header ) + '\n' )
 				for candidate in candidates:
-					print "gene: " + gene + "\t" + info['seq']
-					print alignment_per_candidate[ candidate ]
+					#print "gene: " + gene + "\t" + info['seq']
+					#print alignment_per_candidate[ candidate ]
 					can_aln = alignment_per_candidate[ candidate ][ candidate ]
 					ref_aln = alignment_per_candidate[ candidate ][ info['seq'] ]
 					results, extra_results = check_alignment_for_cons_res( can_aln, ref_aln, residues )
@@ -494,7 +516,10 @@ def check_cons_reg( cons_reg_matrix_folder, regions_per_gene, alignment_per_cand
 					ref_aln = alignment_per_candidate[ candidate ][ info['seq'] ]
 					results = check_alignment_for_cons_reg( can_aln, ref_aln, regions )
 					out.write( "\t".join( map( str, [ subject_name_mapping_table[ candidate ] ] + results  ) ) + '\n' )
-					cons_reg_per_pep.update( { candidate: 100.0*sum( results ) / len( results ) } )
+					try:
+						cons_reg_per_pep.update( { candidate: 100.0*sum( results ) / len( results ) } )
+					except ZeroDivisionError:
+						cons_reg_per_pep.update( { candidate: 0.0 } )
 		except KeyError:
 			print "no information (conserved regions) available about gene: " + gene
 	return cons_reg_per_pep
@@ -1184,9 +1209,19 @@ def validate_input( pos_data_dir, bait_seq_data_dir ):
 		len_error_state = False
 		try:
 			with open( filename, "r" ) as f:
-				line = f.readline().strip()
-				seq_id = line.split('\t')[0]
-				positions = map( int, re.findall( "\d+", ".".join( line.split('\t')[:-1] ) ) )
+				seq_id = ""
+				positions = []
+				line = f.readline()
+				while line:
+					if line[0] == "!":
+						seq_id = line.strip()[1:]
+					else:
+						parts = line.strip().split('\t')
+						if parts[0] == "R":
+							positions.append( int( parts[2] ) )
+						elif parts[0] == "D":
+							positions.append( int( parts[3] ) )
+					line = f.readline()
 			length = len( baits[ ID ][ seq_id ] )
 			if len( positions ) > 0:
 				if max( positions )-1 > length:
@@ -1258,10 +1293,10 @@ def generate_summary_html( html_file, summary, final_file_per_gene, cons_pos_per
 				present_residues = cons_pos_per_pep_extra[ entry['id']  ]
 				tmp_blocks = []
 				for zz, residue in enumerate( present_residues ):
-					if residues_per_gene[ zz ]['aa'] == residue:	#match (conserved residue)
-						tmp_blocks.append( residues_per_gene[ zz ]['aa']  + str( residues_per_gene[ zz ]['pos']  ) + residue )
+					if residue in residues_per_gene[ zz ]['aa']:	#match (conserved residue)
+						tmp_blocks.append( "/".join( residues_per_gene[ zz ]['aa'] )  + str( residues_per_gene[ zz ]['pos']  ) + residue )
 					else:	#missmatch
-						tmp_blocks.append( '<strong style="color: red;">' + residues_per_gene[ zz ]['aa']  + str( residues_per_gene[ zz ]['pos']  ) + residue + "</strong>" )
+						tmp_blocks.append( '<strong style="color: red;">' + "/".join( residues_per_gene[ zz ]['aa'] )  + str( residues_per_gene[ zz ]['pos']  ) + residue + "</strong>" )
 				new_line.append( "<td>" + ", ".join( tmp_blocks ) + "</td>" )
 			except KeyError:
 				new_line.append( "<td>.</td>" )
