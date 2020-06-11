@@ -186,14 +186,14 @@ def tree_based_classification( blast_result_file, self_scores, score_ratio_cutof
 				for each in valid_blast_hits[ key ]:
 					out.write( '>' + each['id'] + '\n' + ref_seq_seqs[ each['id'] ] + '\n'  )
 			aln_file = seq_file + ".aln"
-			os.popen( " ".join( [ mafft, seq_file, ">", aln_file ] ) )
+			os.popen( " ".join( [ mafft, seq_file, ">", aln_file, "2>", aln_file+".err" ] ) )
 			
 			cln_aln_file = aln_file + ".cln"
 			occupancy = 0.3	#could be implemented as option later
 			alignment_trimming( aln_file, cln_aln_file, occupancy )
 			
 			tree_file = cln_aln_file + ".tree"
-			os.popen( " ".join( [ fasttree, "-wag -nosupport <", cln_aln_file, ">", tree_file ] ) )
+			os.popen( " ".join( [ fasttree, "-wag -nosupport <", cln_aln_file, ">", tree_file, "2>", tree_file+".err" ] ) )
 			
 			# --- find reference seqs sister --- #
 			sister = find_sister_in_tree( tree_file )
@@ -338,7 +338,7 @@ def generate_global_alignments( mafft, peps, blast_hits, tmp_dir, ref_seqs ):
 				out.write( '>' + ref['id'] + '\n' + ref['seq'] + '\n' )
 				tmp_mapping.update( { ref['id']: ref['name'] } )
 		# --- run alignment --- #
-		os.popen( mafft + " " + tmp_seq_file + " > " + aln_file )
+		os.popen( mafft + " " + tmp_seq_file + " > " + aln_file + " 2> " + aln_file+".err" )
 		alignment_per_candidate.update( { candidate: load_alignment( aln_file, tmp_mapping ) } )
 	
 	# --- get all query sequence names per gene --- #
@@ -914,7 +914,7 @@ def find_missing_seq_between_hits( amino_acids, DNA, genetic_code, tmp_folder, m
 			with open( out_fasta_file, "w" ) as out:
 				out.write( '>refaa\n' + amino_acids + '\ncandidate\n' + GT+AG + '\n' )
 			aln_file = out_fasta_file + ".aln"
-			os.popen( mafft + " " + out_fasta_file + " > " + aln_file )
+			os.popen( mafft + " " + out_fasta_file + " > " + aln_file + " 2> " + aln_file+".err" )
 			alignment = load_sequences( aln_file )
 			sim = calculate_alignment_sim( alignment['candidate'], alignment['refaa'] )
 			all_seq_combis.append( { 'seq': GT + AG, 'lendiff': 99999999- abs( len( GT + AG ) / 3.0 - amino_acids ), 'sim': sim } )
