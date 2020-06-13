@@ -18,20 +18,22 @@ If a collection of transcript sequences if provided, putative open reading frame
 
 ### Genome sequence (genome assembly)
 
-A tBLASTn is applied to identify regions in the genome sequence, which might encode the desired peptide. As BLAST hits only indicate exons and might be fragmented, BLAST hits are group to putative genes. Fragments of a putative gene are extended to account for incomplete hits at exon borders. This includes the detection of splice sites (currently only canonical GT-AG combinations). If full length peptide sequences are provided as query, the stop codon should be indicated by a * at the end of the peptide sequence.
+A tBLASTn is applied to identify regions in the genome sequence, which might encode the desired peptide. As BLAST hits only indicate exons and might be fragmented, BLAST hits are group to putative genes. Fragments of a putative gene are extended to account for incomplete hits at exon borders. This includes the detection of splice sites (currently only canonical GT-AG combinations). If full length peptide sequences are provided as query, the stop codon should be indicated by a * at the end of the peptide sequence. We recommend to run a proper gene prediction tool like [AUGUSTUS](https://github.com/Gaius-Augustus/Augustus) or [GeMoMa](http://www.jstacs.de/index.php/GeMoMa) if possible. These dedicated tools will outperform the very basic gene structure identification methods implemented in KIPEs in most cases.
 
 
 
 ## Result files
+### HTML summary ###
+The final output of KIPEs is a HTML document called 'SUMMARY.html'. This table shows the best candidates for all steps in the pathway. It is possible to specify the order of genes in a pathway using the `--pathway` option (see below for details). Previously described amino acid residues are checked in all candidate sequences and the results are summarized in this table. Mismatches of conserved residues are indicated by highlighting in red.
 
 ### Similarity matrix
 
-One similarity matrix is generated per bait sequence file. The similarity of all candidates against all baits is displayed.
+One similarity matrix is generated per bait sequence file. The similarity of all candidate sequences against all bait sequences is displayed. Although this table is generated as a text file, it is possible to open these files as tables (e.g. with [Calc](https://www.libreoffice.org/discover/calc/)).
 
 
 ### Conserved residues
 
-The presence of all conserved residues is analysed in all candidate sequences. Presence/absence are indicated in a table comprising all sequences and all residues.
+The presence of all conserved residues is analysed in all candidate sequences. Presence/absence are indicated in a table comprising all sequences and all residues. A summary of these results is diplayed in a HTML file as described above.
 
 
 ### Conserved regions
@@ -65,7 +67,7 @@ Mandatory:
   --subject        STR    Multiple FASTA file with sequences to screen.
   --subjectdir     STR    Directory containing multiple FASTA file with sequences to screen.
 		
-Optional:
+  Optional:
   --positions      STR    Directory with text files (one per gene).
   --seqtype        STR    Defines type of input sequence (pep|rna|dna)[pep]
  
@@ -73,6 +75,13 @@ Optional:
   --scoreratio     FLOAT  BLAST score ratio of self vs. input sequences [0.3]
   --simcut         FLOAT  Minimal similarity of BLAST hits [40.0]
   --checks         STR    Validation of input data (on|off)[on]
+   
+   --simcut        FLOAT  Minimal BLAST hit similarity in percent [40.0]
+   --genesize      INT    Maximal gene size (for tblastn hit grouping) [5000]
+   --minsim        FLOAT  Minimal similarity required in global alignment [0.4]
+   --minres        FLOAT  Minimal proportion of conserved residues [-1.0]
+   --minreg        FLOAT  Minimal proportion of conserved regions [-1.0]
+   --pathway       STR    Full path to text file with pathway enzyme names (default is alphabetical sorting)
    
   --mafft          STR    Full path to MAFFT (if not in your $PATH)
   --blastp         STR    Full path to the BLASTp binary (if not in your $PATH)
