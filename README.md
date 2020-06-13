@@ -108,7 +108,7 @@ R	Q,X	16	comment2 \
 R	R	17	comment3 \
 D	malonyl-CoA_binding_motif	313	329	comment4
 
-Residues: Important residues have their amino acid in the second column (one letter code!) and the position in the third column. It is possible to specify multiple alternative amino acids for one position as indicated by the 'X' in the second entry. Columns following the thrid column can be used for user comments and are ignored by KIPEs.
+Residues: Important residues have their amino acid in the second column (one letter code!) and the position in the third column. It is possible to specify multiple alternative amino acids for one position as indicated by the 'X' in the second entry. Columns following the third column can be used for user comments and are ignored by KIPEs.
 
 Domains: The domain entry indicator (D) is followed by the name of the domain in the first column. This name must not contain any TABs. The third column contains the start position of the domain and the fourth column contains the end position. All following columns are ignored by KIPEs and can be used for user comments.
 
@@ -177,9 +177,13 @@ In order to differentiate between enzymes with high sequence similarity (e.g. CH
 ```
 Usage:
   python find_contrasting_residues.py --in <FILE> --out <DIR> --ref <STRING> --pos <STRING> --neg <STRING>
-
-Mandatory:
-  --in STR          A multiple FASTA file. 
+  or
+  python find_contrasting_residues.py --in1 <FILE> --in2 --out <DIR> --ref <STRING>
+  
+Arguments:
+  --in  STR         A multiple FASTA file.
+  --in1 STR         A multiple FASTA file with white list sequences.
+  --in2 STR         A multiple FASTA file with black list sequences.
   --out STR         Directory for temporary and output files.
   --ref STR         Name of the reference sequence.
   --pos STR         Comma-separated names of sequences (white list).
