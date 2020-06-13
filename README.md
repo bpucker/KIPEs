@@ -120,15 +120,23 @@ Domains: The domain entry indicator (D) is followed by the name of the domain in
 
 `--simcut` specifies the minimal similarity of BLAST hits against the subject to be considered. The value range is 0 to 100 with default at 40.
 
-`--checks` activates (on) or deactivates (off) the validation of input data. Sequence names provided in the conserved positions files are checked against the sequence names in the bait sequence files.
+`--checks` activates (on) or deactivates (off) the validation of input data. Sequence names provided in the conserved positions files are checked against the sequence names in the bait sequence files. 
 
-`--mafft` full path to MAFFT binary if this is not included in $PATH.
+`--genesize` s.
+`--minsim` s.
+`--minres` s.
+`--minreg` s.
+`--pathway` can be used to provide the order of all steps in the pathway as a text file. One enzyme/gene name needs to be given per line and the names need to match the names of provided data files (bait sequence and residue/domain info files) excactly.If no information about the pathway genes/enzymes is provided, results will be sorted in alphabetical order. Enzyme/gene names missing from the pathway file will be appended to the provided list to avoid the loss of results.
 
-`--blastp` full path to blastp binary if this is not included in $PATH.
 
-`--tblastn` full path to tblastn binary if this is not included in $PATH.
 
-`--makeblastdb` full path to makeblastdb binary if this is not included in $PATH.
+`--mafft` full path to MAFFT binary if this is not included in $PATH. MAFFT can be downloaded as a single binary here: https://mafft.cbrc.jp/alignment/software/ .
+
+`--blastp` full path to blastp binary if this is not included in $PATH. BLAST can be downloaded from the [NCBI](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download).
+
+`--tblastn` full path to tblastn binary if this is not included in $PATH. BLAST can be downloaded from the [NCBI](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download).
+
+`--makeblastdb` full path to makeblastdb binary if this is not included in $PATH. BLAST can be downloaded from the [NCBI](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download).
 
 `--fasttree` full path to FastTree binary. If this option is set, a phylogenetic tree is used to classify candidate sequences. FastTree can be downloaded as a single binary file here: http://www.microbesonline.org/fasttree/ .
   
