@@ -58,17 +58,17 @@ Usage:
 
 Mandatory:
   Bait sequences
-  --baits          STR    Directory with (multiple) FASTA files. 
+  --baits          STR    Directory with (multiple) FASTA files
   
   Output directory
   --out            STR    Output directory
 
   Input sequences
-  --subject        STR    Multiple FASTA file with sequences to screen.
-  --subjectdir     STR    Directory containing multiple FASTA file with sequences to screen.
+  --subject        STR    Multiple FASTA file with sequences to screen
+  --subjectdir     STR    Directory containing multiple FASTA file with sequences to screen
 		
   Optional:
-  --positions      STR    Directory with text files (one per gene).
+  --positions      STR    Directory with text files (one per step in pathway)
   --seqtype        STR    Defines type of input sequence (pep|rna|dna)[pep]
  
   --cpus           INT    Number of threads in BLAST runs [10]
@@ -91,14 +91,26 @@ Mandatory:
   --fasttree       STR    Full path to the FastTree binary
 ```
 
+
 `--baits` is the full path to a folder containing (mutliple) FASTA files. The filename needs to match the gene name. Extension should be '.fasta' or '.fa'.
 
 `--out` is the full path to an output folder which will be created if necessary. All temporary and result files will be stored in this folder and subfolders therein.
 
 `--subject` is the full path to an input multiple FASTA file. A collection of peptide (pep), transcript (rna), or genomic (dna) sequences can serve as input. The appropriate input data type needs to be specified via `--seqtype` (pep|rna|dna).
 
-`--positions` is the full path to a folder containing text files matching the provided FASTA files. The filename needs to match the gene name. Extension should be '.txt'. Each file should contain a single line of TAB-separated fiels. The first field must match the name of one sequence in the corresponding FASTA file. Conserved amino acid positons need to be listed based on this sequence. Each following field contains one conserved amino acid residue which should be checked in the target sequences. Example:
-AtCHS	R13	Q16	R17
+`--subjectdir` can be used to run KIPEs on multiple data sets (to analyse multiple species). All subject files in the provided folder are analysed consecutively. It is important that all data sets are of the same sequence type (`--seqtype` (pep|rna|dna)).
+
+`--positions` is the full path to a folder containing text files matching the provided FASTA files. The filename needs to match the gene name. Example: CHS.fasta contains the bait sequences and CHS.txt contains information about relevant amino acid residues and domains. File extension should be '.txt' or '.res'. The header line starts with an exclamation mark followed by the reference sequence name. It is crucial that the name of this sequence is matched by one entry in the bait sequences FASTA file. Each of the following lines contains information about one important amino acid residue or a domain. The type of feature is indicated in the first column using R to specify residues or D to specify domains. The format of entries of residues and domains is slightly different as you can see in this example:
+
+!AtCHS
+R	R	13	comment1
+R	Q,X	16	comment2
+R	R	17	comment3
+D	malonyl-CoA_binding_motif	313	329	comment4
+
+Residues: Important residues have their amino acid in the second column (one letter code!) and the position in the third column. It is possible to specify multiple alternative amino acids for one position as indicated by the 'X' in the second entry. Columns following the thrid column can be used for user comments and are ignored by KIPEs.
+
+Domains: The domain entry indicator (D) is followed by the name of the domain in the first column. This name must not contain any TABs. The third column contains the start position of the domain and the fourth column contains the end position. All following columns are ignored by KIPEs and can be used for user comments.
 
 `--seqtype` specifies the input data type as peptide (pep), transcript (rna), or genomic (dna) sequences.
 
