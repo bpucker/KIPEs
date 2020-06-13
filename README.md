@@ -102,11 +102,11 @@ Mandatory:
 
 `--positions` is the full path to a folder containing text files matching the provided FASTA files. The filename needs to match the gene name. Example: CHS.fasta contains the bait sequences and CHS.txt contains information about relevant amino acid residues and domains. File extension should be '.txt' or '.res'. The header line starts with an exclamation mark followed by the reference sequence name. It is crucial that the name of this sequence is matched by one entry in the bait sequences FASTA file. Each of the following lines contains information about one important amino acid residue or a domain. The type of feature is indicated in the first column using R to specify residues or D to specify domains. The format of entries of residues and domains is slightly different as you can see in this example:
 
-!AtCHS
+`!AtCHS
 R	R	13	comment1
 R	Q,X	16	comment2
 R	R	17	comment3
-D	malonyl-CoA_binding_motif	313	329	comment4
+D	malonyl-CoA_binding_motif	313	329	comment4`
 
 Residues: Important residues have their amino acid in the second column (one letter code!) and the position in the third column. It is possible to specify multiple alternative amino acids for one position as indicated by the 'X' in the second entry. Columns following the thrid column can be used for user comments and are ignored by KIPEs.
 
