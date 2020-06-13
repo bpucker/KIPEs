@@ -1197,7 +1197,13 @@ def generate_final_pep_files( 	peps, final_pep_folder, candidates_by_gene,
 def validate_input( pos_data_dir, bait_seq_data_dir ):
 	"""! @brief validate input """
 	
-	pos_data_files = glob.glob( pos_data_dir + "*.txt" )
+	
+	### dependency checks ###
+	tool_errors = []
+	for each in [ makeblastdb, blastp, tblastn, mafft, fasttree ]
+	#dependency check!! blastp, makeblastdb, tblastn, mafft, fasttree
+	
+	pos_data_files = glob.glob( pos_data_dir + "*.txt" ) + glob.glob( pos_data_dir + "*.res" )
 	fasta_files = glob.glob( bait_seq_data_dir + "*.fa" ) + glob.glob( bait_seq_data_dir + "*.fasta" )
 	baits = {}
 	for fasta in fasta_files:
@@ -1307,7 +1313,7 @@ def generate_summary_html( html_file, summary, final_file_per_gene, cons_pos_per
 		out.write( "</table>\n" )
 
 
-def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, treestatus ):
+def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks ):
 	"""! @brief run whole KIPEs analysis for one subject sequence file """
 	
 	errors = validate_input( pos_data_dir, bait_seq_data_dir )
@@ -1393,7 +1399,7 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 	
 	# --- load BLAST results or classify based on phylogenetic tree --- #
 	self_scores = load_self_BLAST_hit_scores( self_blast_result_file )
-	if treestatus:
+	if len( fasttree ) > 1:
 		tree_tmp = output_dir + "tree_tmp/"
 		if not os.path.exists( tree_tmp ):
 			os.makedirs( tree_tmp )
@@ -1504,6 +1510,10 @@ def main( arguments ):
 	
 	if '--fasttree' in arguments:
 		fasttree = arguments[ arguments.index('--fasttree')+1 ]
+		print "INFO: classification of candidates will be based on phylogenetic trees."
+	else:
+		fasttree = ""
+		print "INFO: classification of candidates will be based on BLAST hit similarity."
 	
 	if '--cpus' in arguments:
 		cpus = int( arguments[ arguments.index('--cpus')+1 ] )
@@ -1546,20 +1556,10 @@ def main( arguments ):
 	else:
 		checks = "on"
 	
-	if '--fasttree' in arguments:
-		treestatus = True
-		print "INFO: classification of candidates will be based on phylogenetic trees."
-	else:
-		treestatus = False
-		print "INFO: classification of candidates will be based on BLAST hit similarity."
-	
 	if '--pathway' in arguments:
 		pathway_file = arguments[ arguments.index('--pathway')+1 ]
 	else:
 		pathway_file = ""
-	
-	### dependency checks ###
-	#dependency check!! blastp, makeblastdb, tblastn, mafft, fasttree
 	
 	for subject in subjects:
 		if not os.path.isfile( subject ):
@@ -1576,7 +1576,7 @@ def main( arguments ):
 		KIPEs( 	bait_seq_data_dir, output_dirs[ xxx ], subject, pos_data_dir, seqtype,
 					mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file,
 					cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size,
-					xsimcut, xconsrescut, xconsregcut, checks, treestatus 
+					xsimcut, xconsrescut, xconsregcut, checks 
 				)
 
 
