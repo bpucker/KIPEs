@@ -122,10 +122,14 @@ Domains: The domain entry indicator (D) is followed by the name of the domain in
 
 `--checks` activates (on) or deactivates (off) the validation of input data. Sequence names provided in the conserved positions files are checked against the sequence names in the bait sequence files. 
 
-`--genesize` s.
-`--minsim` s.
-`--minres` s.
-`--minreg` s.
+`--genesize` specifies the maximal distance between tblastn hits to be considered as parts of the same gene.
+
+`--minsim` specifies the minimal similariy required in the global alignment. A low value leads to a high sensitivity, but causes the analysis of more sequences thus increasing the run time.
+
+`--minres` specifies the minimal proportion (0.0 - 1.0) of important amino acid residues that need to be conserved. This filtering option should only be used to remove low quality hits. However, manual inspection of top hits with just a few amino acid substitutions is recommended. Sequences with amino acid substitutions might have lost the ancestral function of an enzyme, but could have gained a new one.
+
+`--minreg` specifies the minimal proportion (0.0 - 1.0) of domains that need to be conserved. This filtering option should only be used to remove low quality hits. However, manual inspection of top hits with just a few amino acid substitutions is recommended. Sequences with amino acid substitutions in these domains might have lost the ancestral function of an enzyme, but could have gained a new one.
+
 `--pathway` can be used to provide the order of all steps in the pathway as a text file. One enzyme/gene name needs to be given per line and the names need to match the names of provided data files (bait sequence and residue/domain info files) excactly.If no information about the pathway genes/enzymes is provided, results will be sorted in alphabetical order. Enzyme/gene names missing from the pathway file will be appended to the provided list to avoid the loss of results.
 
 
