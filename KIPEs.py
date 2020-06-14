@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-### v0.25 ###
+### v0.252 ###
 
 __usage__ = """
 					python KIPEs.py
@@ -78,7 +78,7 @@ def load_self_BLAST_hit_scores( self_blast_result_file ):
 	return self_BLAST_hit_scores
 
 
-def load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff ):
+def load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff, possibility_cutoff ):
 	"""! @brief load BLAST results """
 	
 	valid_blast_hits = {}
@@ -89,15 +89,26 @@ def load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, simi
 			if float( parts[2] ) > similarity_cutoff:	#similarity is sufficient
 				if float( parts[-1] ) > score_ratio_cutoff * self_scores[ parts[0] ]:	#substantial part of query is matched
 					try:
-						if float( parts[-1] ) > valid_blast_hits[ parts[1] ]['score']:
-							valid_blast_hits[ parts[1] ] = { 'gene': parts[0].split('_%_')[0], 'score': float( parts[-1] ) }
+						valid_blast_hits[ parts[1] ].append( { 'gene': parts[0].split('_%_')[0], 'score': float( parts[-1] ) } )
 					except KeyError:
-						valid_blast_hits.update( { parts[1]: { 'gene': parts[0].split('_%_')[0], 'score': float( parts[-1] ) } } )
+						valid_blast_hits.update( { parts[1]: [ { 'gene': parts[0].split('_%_')[0], 'score': float( parts[-1] ) } ] } )
 			line = f.readline()
+	
+	# --- reduce BLAST hit number to given number of candidate possibilities ---- #
+	final_valid_blast_hits = {}
+	for key in valid_blast_hits.keys():
+		hits = sorted( valid_blast_hits[ key ], key=itemgetter( 'score' ) )[::-1]
+		genes = []
+		for hit in hits:
+			if hit['gene'] not in genes:
+				if len( genes ) < possibility_cutoff:
+					genes.append( gene )
+		final_valid_blast_hits.update( { key: genes } )
+	
 	return valid_blast_hits
 
 
-def  find_sister_in_tree( tree_file ):
+def  find_sisters_in_tree( tree_file ):
 	"""! @brief find sister clade in phylogenetic tree """
 	
 	with open( tree_file, "r" ) as f:
@@ -111,11 +122,16 @@ def  find_sister_in_tree( tree_file ):
 		else:
 			region = parts[1].split( gene )[0]
 		dist_per_gene.append( { 'id': gene, 'dist': region.count( '(' ) + region.count(')') } )
-	try:
-		return sorted( dist_per_gene, key=itemgetter( 'dist' ) )[0]['id']
-	except IndexError:
+	if len( dist_per_gene ) > 0:
+		sisters = []
+		for sister in sorted( dist_per_gene, key=itemgetter( 'dist' ) ):
+			gene = sister['id'].split('_%_')[0]
+			if gene not in sisters:
+				sisters.append( gene )
+		return sisters
+	else:
 		print "ERROR: " + tree_file
-		return False
+		return []
 
 
 def alignment_trimming( aln_file, cln_aln_file, occupancy ):
@@ -148,7 +164,7 @@ def alignment_trimming( aln_file, cln_aln_file, occupancy ):
 			out.write( "" )
 
 
-def tree_based_classification( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff, tree_tmp, fasttree, mafft, peps, ref_seqs ):
+def tree_based_classification( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff, tree_tmp, fasttree, mafft, peps, ref_seqs, possibility_cutoff ):
 	"""! @brief load BLAST results """
 	
 	final_results = {}
@@ -173,11 +189,11 @@ def tree_based_classification( blast_result_file, self_scores, score_ratio_cutof
 		for entry in value:
 			ref_seq_seqs.update( { entry['id']: entry['seq'] } )	#id or name?
 			ref_seq_ID_to_gene_mapping.update( { entry['id']: entry['gene'] } )
-	 
+	
 	# --- process all valid BLAST results --- #
 	for key in valid_blast_hits.keys():
 		if len( valid_blast_hits[ key ] ) == 1:
-			final_results.update( { key: valid_blast_hits[ key ][0] } )
+			final_results.update( { key: { 'gene': [ valid_blast_hits[ key ][0]['gene'] ] } } )
 		else:
 			# --- build tree --- #
 			seq_file = tree_tmp + key + ".fasta"
@@ -196,9 +212,13 @@ def tree_based_classification( blast_result_file, self_scores, score_ratio_cutof
 			os.popen( " ".join( [ fasttree, "-wag -nosupport <", cln_aln_file, ">", tree_file, "2>", tree_file+".err" ] ) )
 			
 			# --- find reference seqs sister --- #
-			sister = find_sister_in_tree( tree_file )
-			if sister:
-				final_results.update( { key: { 'gene': sister.split('_%_')[0] } } )
+			sisters = find_sisters_in_tree( tree_file )
+			if len( sisters ) > 0:
+				genes = []
+				for s, sister in enumerate( sisters ):
+					if s < possibility_cutoff:
+						genes.append( sister )	#sister.split('_%_')[0]
+				final_results.update( { key: { 'gene': genes } } )
 	return final_results
 
 
@@ -308,7 +328,7 @@ def calculate_sim_matrix_per_gene( query_names_by_gene, candidates_by_gene, alig
 			candiate_sim_matrix = {}
 			for query in query_names_by_gene[ gene ]:
 				try:
-					sim = calculate_similarity( alignment_per_candidate[ candidate ][ candidate ], alignment_per_candidate[ candidate ][ query ] )
+					sim = calculate_similarity( alignment_per_candidate[ candidate ][ gene ][ candidate ], alignment_per_candidate[ candidate ][ gene ][ query ] )
 				except KeyError:
 					sim = 0
 				candiate_sim_matrix.update( { query: sim } )
@@ -323,23 +343,26 @@ def generate_global_alignments( mafft, peps, blast_hits, tmp_dir, ref_seqs ):
 	alignment_per_candidate = {}
 	candidates_by_gene = {}
 	for candidate in blast_hits.keys():
-		gene = blast_hits[ candidate ]['gene']
-		try:
-			candidates_by_gene[ gene ].append( candidate )
-		except KeyError:
-			candidates_by_gene.update( { gene: [ candidate ] } )
-		tmp_mapping = {}
-		tmp_seq_file = tmp_dir + candidate + ".fasta"
-		aln_file = tmp_dir + candidate + ".fasta.aln"
-		# --- prepare multiple FASTA file --- #
-		with open( tmp_seq_file, "w" ) as out:
-			out.write( '>' + candidate + '\n' + peps[ candidate ] + '\n' )
-			for ref in ref_seqs[ gene ]:
-				out.write( '>' + ref['id'] + '\n' + ref['seq'] + '\n' )
-				tmp_mapping.update( { ref['id']: ref['name'] } )
-		# --- run alignment --- #
-		os.popen( mafft + " " + tmp_seq_file + " > " + aln_file + " 2> " + aln_file+".err" )
-		alignment_per_candidate.update( { candidate: load_alignment( aln_file, tmp_mapping ) } )
+		for gene in blast_hits[ candidate ]['gene']:
+			try:
+				candidates_by_gene[ gene ].append( candidate )
+			except KeyError:
+				candidates_by_gene.update( { gene: [ candidate ] } )
+			tmp_mapping = {}
+			tmp_seq_file = tmp_dir + candidate + ".fasta"
+			aln_file = tmp_dir + candidate + ".fasta.aln"
+			# --- prepare multiple FASTA file --- #
+			with open( tmp_seq_file, "w" ) as out:
+				out.write( '>' + candidate + '\n' + peps[ candidate ] + '\n' )
+				for ref in ref_seqs[ gene ]:
+					out.write( '>' + ref['id'] + '\n' + ref['seq'] + '\n' )
+					tmp_mapping.update( { ref['id']: ref['name'] } )
+			# --- run alignment --- #
+			os.popen( mafft + " " + tmp_seq_file + " > " + aln_file + " 2> " + aln_file+".err" )
+			try:
+				alignment_per_candidate[ candidate ].update( { gene: load_alignment( aln_file, tmp_mapping ) } )
+			except KeyError:
+				alignment_per_candidate.update( { candidate: { gene: load_alignment( aln_file, tmp_mapping ) } } )
 	
 	# --- get all query sequence names per gene --- #
 	query_names_by_gene = {}
@@ -369,7 +392,10 @@ def generate_sim_matrix_output_files( sim_matrix_folder, sim_matrix_per_gene, su
 				new_line = [ subject_name_mapping_table[ candidate ] ]
 				for query in queries:
 					new_line.append( 100.0*data[ candidate ][ query ] )
-				sim_per_pep.update( { candidate: sum( new_line[1:] ) / len( new_line[1:] ) } )
+				try:
+					sim_per_pep[ candidate ].update( { gene: sum( new_line[1:] ) / len( new_line[1:] ) } )
+				except KeyError:
+					sim_per_pep.update( { candidate: { gene: sum( new_line[1:] ) / len( new_line[1:] ) } } )
 				out.write( "\t".join( map( str, new_line ) ) + '\n' )
 	return sim_per_pep
 
@@ -467,16 +493,18 @@ def check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_can
 					header.append( "/".join( each['aa'] ) + str( each['pos'] ) )
 				out.write( "\t".join( header ) + '\n' )
 				for candidate in candidates:
-					#print "gene: " + gene + "\t" + info['seq']
-					#print alignment_per_candidate[ candidate ]
-					can_aln = alignment_per_candidate[ candidate ][ candidate ]
-					ref_aln = alignment_per_candidate[ candidate ][ info['seq'] ]
+					can_aln = alignment_per_candidate[ candidate ][ gene ][ candidate ]
+					ref_aln = alignment_per_candidate[ candidate ][ gene ][ info['seq'] ]
 					results, extra_results = check_alignment_for_cons_res( can_aln, ref_aln, residues )
 					out.write( "\t".join( map( str, [ subject_name_mapping_table[ candidate ] ] + results  ) ) + '\n' )
-					cons_pos_per_pep.update( { candidate: 100.0*sum( results ) / len( results ) } )
-					cons_pos_per_pep_extra.update( { candidate: extra_results } )
+					try:
+						cons_pos_per_pep[ candidate ].update( { gene: 100.0*sum( results ) / len( results ) } )
+						cons_pos_per_pep_extra[ candidate ].update( { gene: extra_results } )
+					except KeyError:
+						cons_pos_per_pep.update( { candidate: { gene: 100.0*sum( results ) / len( results ) } } )
+						cons_pos_per_pep_extra.update( { candidate: { gene: extra_results } } )
 		except KeyError:
-			print "no information (conserved residues) available about gene: " + gene
+			print "ERROR: no information (conserved residues) available about gene: " + gene
 	return cons_pos_per_pep, cons_pos_per_pep_extra
 
 
@@ -512,16 +540,22 @@ def check_cons_reg( cons_reg_matrix_folder, regions_per_gene, alignment_per_cand
 					header.append( each['name'] + "," +  str( each['start'] ) + "-" + str( each['end'] ) )
 				out.write( "\t".join( header ) + '\n' )
 				for candidate in candidates:
-					can_aln = alignment_per_candidate[ candidate ][ candidate ]
-					ref_aln = alignment_per_candidate[ candidate ][ info['seq'] ]
+					can_aln = alignment_per_candidate[ candidate ][ gene ][ candidate ]
+					ref_aln = alignment_per_candidate[ candidate ][ gene ][ info['seq'] ]
 					results = check_alignment_for_cons_reg( can_aln, ref_aln, regions )
 					out.write( "\t".join( map( str, [ subject_name_mapping_table[ candidate ] ] + results  ) ) + '\n' )
 					try:
-						cons_reg_per_pep.update( { candidate: 100.0*sum( results ) / len( results ) } )
-					except ZeroDivisionError:
-						cons_reg_per_pep.update( { candidate: 0.0 } )
+						try:
+							cons_reg_per_pep[ candidate ].update( { gene: 100.0*sum( results ) / len( results ) } )
+						except ZeroDivisionError:
+							cons_reg_per_pep[ candidate ].update( { gene: 0.0 } )
+					except KeyError:
+						try:
+							cons_reg_per_pep.update( { candidate: { gene: 100.0*sum( results ) / len( results ) } } )
+						except ZeroDivisionError:
+							cons_reg_per_pep.update( { candidate: { gene: 0.0 } } )
 		except KeyError:
-			print "no information (conserved regions) available about gene: " + gene
+			print "ERROR: no information (conserved regions) available about gene: " + gene
 	return cons_reg_per_pep
 
 
@@ -1161,15 +1195,15 @@ def generate_final_pep_files( 	peps, final_pep_folder, candidates_by_gene,
 				values_for_sorting = []
 				for candidate in candidates:
 					try:
-						psim = sim_per_pep[ candidate ]
+						psim = sim_per_pep[ candidate ][ gene ]
 					except KeyError:
 						psim = 0
 					try:
-						pres = cons_pos_per_pep[ candidate ]
+						pres = cons_pos_per_pep[ candidate ][ gene ]
 					except KeyError:
 						pres = 0
 					try:
-						preg = cons_reg_per_pep[ candidate ]
+						preg = cons_reg_per_pep[ candidate ][ gene ]
 					except KeyError:
 						preg = 0
 					
@@ -1194,15 +1228,56 @@ def generate_final_pep_files( 	peps, final_pep_folder, candidates_by_gene,
 	return complete_summary, final_file_per_gene
 
 
-def validate_input( pos_data_dir, bait_seq_data_dir ):
+def which( cmd, mode=os.F_OK, path=None ):
+	"""! @brief checks if software is available
+	code is based on whichcraft (Daniel Roy Greenfield): https://github.com/cookiecutter/whichcraft/blob/master/whichcraft.py#L20
+	"""
+	
+	def _access_check( fn, mode ):
+		return os.path.exists(fn) and os.access(fn, mode) and not os.path.isdir(fn)
+	
+	if os.path.dirname( cmd ):
+		if _access_check( cmd, mode ):
+			return cmd
+		return None
+	if path is None:
+		path = os.environ.get( "PATH", os.defpath )
+	if not path:
+		return None
+	
+	path = path.split( os.pathsep )
+	files = [ cmd ]
+	seen = set()
+	for directory in path:
+		normdir = os.path.normcase( directory )
+		if normdir not in seen:
+			seen.add( normdir )
+			for thefile in files:
+				name = os.path.join( directory, thefile )
+				if _access_check( name, mode ):
+					return name
+	return None
+
+
+def validate_input( pos_data_dir, bait_seq_data_dir, makeblastdb, blastp, tblastn, mafft, fasttree ):
 	"""! @brief validate input """
 	
+	### tool dependency checks ###
+	tool_labels = [ "makeblastdb", "blastp", "tblastn", "mafft", "fasttree" ]
+	tool_state = True
+	for t, each_tool in enumerate( [ makeblastdb, blastp, tblastn, mafft, fasttree ] ):
+		each_tool_state = which( each_tool )
+		if each_tool_state == None:
+			if t == 4 and len( fasttree ) == 0:
+				pass
+			else:
+				print "ERROR: specified binary of " + tool_labels[ t ] + " not detected - " + each_tool
+				tool_state = False
+	if not tool_state:
+		sys.exit( "ERROR: specified binaries not detected. Please see error messages above for details." )
 	
-	### dependency checks ###
-	tool_errors = []
-	for each in [ makeblastdb, blastp, tblastn, mafft, fasttree ]
-	#dependency check!! blastp, makeblastdb, tblastn, mafft, fasttree
 	
+	### data consistency checks ###
 	pos_data_files = glob.glob( pos_data_dir + "*.txt" ) + glob.glob( pos_data_dir + "*.res" )
 	fasta_files = glob.glob( bait_seq_data_dir + "*.fa" ) + glob.glob( bait_seq_data_dir + "*.fasta" )
 	baits = {}
@@ -1296,7 +1371,7 @@ def generate_summary_html( html_file, summary, final_file_per_gene, cons_pos_per
 			
 			try:
 				residues_per_gene = pos_data_per_gene[ entry['gene'] ]['residues']	#[ { 'aa': X, 'pos': int( res[1:] ) }, { 'aa': X, 'pos': int( res[1:] ) }, ...]
-				present_residues = cons_pos_per_pep_extra[ entry['id']  ]
+				present_residues = cons_pos_per_pep_extra[ entry['id']  ][ entry['gene']]
 				tmp_blocks = []
 				for zz, residue in enumerate( present_residues ):
 					if residue in residues_per_gene[ zz ]['aa']:	#match (conserved residue)
@@ -1313,10 +1388,10 @@ def generate_summary_html( html_file, summary, final_file_per_gene, cons_pos_per
 		out.write( "</table>\n" )
 
 
-def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks ):
+def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff ):
 	"""! @brief run whole KIPEs analysis for one subject sequence file """
 	
-	errors = validate_input( pos_data_dir, bait_seq_data_dir )
+	errors = validate_input( pos_data_dir, bait_seq_data_dir, makeblastdb, blastp, tblastn, mafft, fasttree )
 	if len( errors ) > 0:
 		for error in errors:
 			if error['seq']:
@@ -1399,15 +1474,16 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 	
 	# --- load BLAST results or classify based on phylogenetic tree --- #
 	self_scores = load_self_BLAST_hit_scores( self_blast_result_file )
+	
 	if len( fasttree ) > 1:
 		tree_tmp = output_dir + "tree_tmp/"
 		if not os.path.exists( tree_tmp ):
 			os.makedirs( tree_tmp )
 		blast_hits = tree_based_classification( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff,
-																		tree_tmp, fasttree, mafft, peps, ref_seqs
+																		tree_tmp, fasttree, mafft, peps, ref_seqs, possibility_cutoff
 																		)
 	else:
-		blast_hits = load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff )
+		blast_hits = load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff, possibility_cutoff )
 	
 	# --- analyse candidates in global alignments --- #
 	tmp_dir = output_dir + "tmp/"
@@ -1551,6 +1627,9 @@ def main( arguments ):
 	else:
 		xconsregcut = -1	#minimal similarity of conserved regions to keep candidate (deactivated by default)
 	
+	
+	possibility_cutoff = 3
+	
 	if '--checks' in arguments:
 		checks = arguments[ arguments.index('--checks')+1 ]
 	else:
@@ -1576,7 +1655,7 @@ def main( arguments ):
 		KIPEs( 	bait_seq_data_dir, output_dirs[ xxx ], subject, pos_data_dir, seqtype,
 					mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file,
 					cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size,
-					xsimcut, xconsrescut, xconsregcut, checks 
+					xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff
 				)
 
 
