@@ -82,6 +82,7 @@ Mandatory:
    --minres        FLOAT  Minimal proportion of conserved residues [-1.0]
    --minreg        FLOAT  Minimal proportion of conserved regions [-1.0]
    --pathway       STR    Full path to text file with pathway enzyme names (default is alphabetical sorting)
+   --possibilities INT    Maximal number of enzyme functions to consider per sequence [3]
    
   --mafft          STR    Full path to MAFFT (if not in your $PATH)
   --blastp         STR    Full path to the BLASTp binary (if not in your $PATH)
@@ -131,6 +132,9 @@ Domains: The domain entry indicator (D) is followed by the name of the domain in
 `--minreg` specifies the minimal proportion (0.0 - 1.0) of domains that need to be conserved. This filtering option should only be used to remove low quality hits. However, manual inspection of top hits with just a few amino acid substitutions is recommended. Sequences with amino acid substitutions in these domains might have lost the ancestral function of an enzyme, but could have gained a new one.
 
 `--pathway` can be used to provide the order of all steps in the pathway as a text file. One enzyme/gene name needs to be given per line and the names need to match the names of provided data files (bait sequence and residue/domain info files) excactly.If no information about the pathway genes/enzymes is provided, results will be sorted in alphabetical order. Enzyme/gene names missing from the pathway file will be appended to the provided list to avoid the loss of results.
+
+
+`--possibilities` specifies the number of different enzyme functions that are considered per sequence. This argument is relevant if looking for multiple different enzymes with high overall sequence similarity e.g. CHS/STS or F3H/FLS/LDOX. One sequence can be checked for the relevant amino acid residues of each of these enzymes to allow a high fidelity classification.
 
 
 
