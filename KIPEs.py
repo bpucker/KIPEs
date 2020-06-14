@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-### v0.252 ###
+### v0.253 ###
 
 __usage__ = """
 					python KIPEs.py
@@ -20,6 +20,7 @@ __usage__ = """
 					--minres <FLOAT, MINIMAL_PROPORTION_OF_CONSERVED_RESIDUES>[off]
 					--minreg <FLOAT, MINIMAL_PROPORTION_OF_CONSERVED_REGIONS>[off]
 					--pathway <TEXT_FILE_SPECIFYING_GENE_ORDER>
+					--possibilities <INT, NUMBER_OF_CONSIDERED_ENZYME_FUNCTIONS_PER_SEQ>[3]
 					
 					--mafft <PATH_TO_MAFFT>[mafft]
 					--blastp <PATH_TO_AND_INCLUDING_BINARY>[blastp]
@@ -1627,8 +1628,10 @@ def main( arguments ):
 	else:
 		xconsregcut = -1	#minimal similarity of conserved regions to keep candidate (deactivated by default)
 	
-	
-	possibility_cutoff = 3
+	if '--possibilities' in arguments:
+		possibility_cutoff = int( arguments[ arguments.index('--possibilities')+1 ] )
+	else:
+		possibility_cutoff = 3
 	
 	if '--checks' in arguments:
 		checks = arguments[ arguments.index('--checks')+1 ]
