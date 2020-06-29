@@ -210,3 +210,7 @@ MAFFT: https://doi.org/10.1093/molbev/mst010
 
 FastTree2: https://doi.org/10.1371/journal.pone.0009490
 
+
+When using KIPEs in your research, please cite:
+
+Automatic identification of players in the flavonoid biosynthesis with application on the biomedicinal plant Croton tiglium. Boas Pucker, Franziska Reiher, Hanna Marie Schilbert. bioRxiv 2020.06.27.175067; doi: https://doi.org/10.1101/2020.06.27.175067
