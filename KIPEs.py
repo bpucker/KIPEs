@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-### v0.253 ###
+__version__ = "v0.255"
 
 __usage__ = """
 					python KIPEs.py
@@ -472,8 +472,12 @@ def check_alignment_for_cons_res( can_aln, ref_aln, residues ):
 	extra_results = []
 	for res in residues:
 		alignment_pos = get_alignment_pos( ref_aln, res['pos']-1 )
-		results.append( can_aln[ alignment_pos ] in res['aa'] )	#multiple different amino acids might be permitted at one position
-		extra_results.append( can_aln[ alignment_pos ] )
+		if can_aln[ alignment_pos ] == "-":
+			results.append( "-" )
+			extra_results.append( "-" )
+		else:	
+			results.append( can_aln[ alignment_pos ] in res['aa'] )	#multiple different amino acids might be permitted at one position
+			extra_results.append( can_aln[ alignment_pos ] )
 	return results, extra_results
 
 
@@ -499,10 +503,10 @@ def check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_can
 					results, extra_results = check_alignment_for_cons_res( can_aln, ref_aln, residues )
 					out.write( "\t".join( map( str, [ subject_name_mapping_table[ candidate ] ] + results  ) ) + '\n' )
 					try:
-						cons_pos_per_pep[ candidate ].update( { gene: 100.0*sum( results ) / len( results ) } )
+						cons_pos_per_pep[ candidate ].update( { gene: 100.0* results.count( True ) / len( results ) } )
 						cons_pos_per_pep_extra[ candidate ].update( { gene: extra_results } )
 					except KeyError:
-						cons_pos_per_pep.update( { candidate: { gene: 100.0*sum( results ) / len( results ) } } )
+						cons_pos_per_pep.update( { candidate: { gene: 100.0* results.count( True ) / len( results ) } } )
 						cons_pos_per_pep_extra.update( { candidate: { gene: extra_results } } )
 		except KeyError:
 			print "ERROR: no information (conserved residues) available about gene: " + gene
@@ -1339,7 +1343,7 @@ def get_pathway( pathway_file, candidates_by_gene ):
 	return final_pathway
 
 
-def generate_summary_html( html_file, summary, final_file_per_gene, cons_pos_per_pep_extra, pathway, pos_data_per_gene ):
+def generate_summary_html( html_file, summary, peps, cons_pos_per_pep_extra, pathway, pos_data_per_gene ):
 	"""! @brief generate final summary HTML """
 	
 	#cons_pos_per_pep_extra = { 'pep1': [ A, T, A, S, -, T, S, -, -, - ], 'pep2': [ A, S, A, S, T, -, - ] }	contains residues at key positions
@@ -1363,7 +1367,10 @@ def generate_summary_html( html_file, summary, final_file_per_gene, cons_pos_per
 	# --- generate HTML file --- #
 	#Gene		SeqID	Similarity	Residues		LinkToData
 	with open( html_file, "w" ) as out:
-		out.write( "<h1>SUMMARY</h1>\n<table>\n<tr> <th>Gene</th><th>SeqID</th><th>Similarity</th><th>Residues</th><th>SequenceFile</th> </tr>" )
+		out.write( "<h1>SUMMARY</h1>\n")
+		out.write( "These results were produced by KIPEs " + __version__ + ". " )
+		out.write('Please see the instructions in the <a href="https://github.com/bpucker/KIPEs">KIPEs</a> github repository for details.\n' )
+		out.write( "<table>\n<tr> <th>Gene</th><th>SeqID</th><th>Similarity</th><th>Residues</th><th>PeptideSequence</th> </tr>" )
 		for entry in entry_order:
 			new_line = []
 			new_line.append( "<td>" + entry['gene'] + "</td>" )	#gene name (function in pathway)
@@ -1383,7 +1390,10 @@ def generate_summary_html( html_file, summary, final_file_per_gene, cons_pos_per
 			except KeyError:
 				new_line.append( "<td>.</td>" )
 			
-			new_line.append( "<td>" + final_file_per_gene[ entry['gene'] ] + "</td>" )	#add link to final peptide files
+			chunks = [ peps[ entry['id'] ][i:i+100] for i in range( 0, len( peps[ entry['id'] ] ), 100 ) ]
+			new_line.append( "<td>" + "<br>".join( chunks ) + "</td>" )	#add link to final peptide files
+			
+			
 			out.write( "<tr>" + "".join( new_line ) + "</tr>\n" )
 		
 		out.write( "</table>\n" )
@@ -1528,7 +1538,7 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 	html_file = output_dir + "SUMMARY.html"
 	
 	pathway = get_pathway( pathway_file, candidates_by_gene )
-	generate_summary_html( html_file, summary, final_file_per_gene, cons_pos_per_pep_extra, pathway, pos_data_per_gene )
+	generate_summary_html( html_file, summary, peps, cons_pos_per_pep_extra, pathway, pos_data_per_gene )
 
 	#build phylogenetic tree with landmark sequences
 
