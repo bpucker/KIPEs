@@ -201,6 +201,19 @@ Arguments:
 As this tool is an automatic identification pipeline for candidate genes, the resolution of this analysis might be inferior to a manual annotation in certain cases like ODDs (F3H, FLS, LDOX). Therefore, it is recommended to carefully inspect the results from this pipeline. Generally, the quality of results is depending on the input quality. This pipeline was developed for the annotation of genes in the flavonoid biosynthesis of plants, but could be applied to other pathways if sufficient information is available.
 
 
+## Data sets
+
+baits.tar.gz recommended data sets for analysing the flavonoid biosynthesis in a new species.
+
+residues.tar.gz recommended data sets for analysing the flavonoid biosynthesis in a new species.
+
+FlavonoidBioSynBaits_v1.0.tar.gz was used in the proof of concept of [KIPEs](https://doi.org/10.1101/2020.06.27.175067) analysing the [transcriptome assembly of Croton tiglium](https://doi.org/10.3389/fmolb.2018.00062).
+
+MYB_bHLH_WDR_v1.0.tar.gz was used in the proof of concept of [KIPEs](https://doi.org/10.1101/2020.06.27.175067) analysing the [transcriptome assembly of Croton tiglium](https://doi.org/10.3389/fmolb.2018.00062). This data set comprises transcription factors belonging to the three families MYB, bHLH, and WDR.
+MYBs:
+bHLHs:
+WDRs:
+
 
 ## References
 
