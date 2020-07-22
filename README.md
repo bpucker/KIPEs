@@ -210,7 +210,7 @@ residues.tar.gz recommended data sets for analysing the flavonoid biosynthesis i
 FlavonoidBioSynBaits_v1.0.tar.gz was used in the proof of concept of [KIPEs](https://doi.org/10.1101/2020.06.27.175067) analysing the [transcriptome assembly of Croton tiglium](https://doi.org/10.3389/fmolb.2018.00062).
 
 MYB_bHLH_WDR_v1.0.tar.gz was used in the proof of concept of [KIPEs](https://doi.org/10.1101/2020.06.27.175067) analysing the [transcriptome assembly of Croton tiglium](https://doi.org/10.3389/fmolb.2018.00062). This data set comprises transcription factors belonging to the three families MYB, bHLH, and WDR.
-MYBs:
+MYBs: Arabidopsis thaliana [Stracke et al., 2001](https://doi.org/10.1016/S1369-5266(00)00199-0), Vitis vinifera [Matus et al., 2008](https://bmcplantbiol.biomedcentral.com/articles/10.1186/1471-2229-8-83), Beta vulgaris [Stracke et al., 2014](https://bmcplantbiol.biomedcentral.com/articles/10.1186/s12870-014-0249-8), and Musa acuminata [Pucker et al., 2020](https://doi.org/10.1101/2020.02.03.932046); 
 bHLHs:
 WDRs:
 
