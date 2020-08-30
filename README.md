@@ -209,7 +209,7 @@ As this tool is an automatic identification pipeline for candidate genes, the re
 
 **FlavonoidBioSynBaits_v1.0.tar.gz** was used in the proof of concept of [KIPEs](https://doi.org/10.1101/2020.06.27.175067) analysing the [transcriptome assembly of *Croton tiglium*](https://doi.org/10.3389/fmolb.2018.00062).
 
-**MYB_bHLH_WDR_v1.0.tar.gz** was used in the proof of concept of [KIPEs](https://doi.org/10.1101/2020.06.27.175067) analysing the [transcriptome assembly of *Croton tiglium*](https://doi.org/10.3389/fmolb.2018.00062). This data set comprises transcription factors belonging to the three families MYB, bHLH, and WDR.
+**MYB_bHLH_WDR_v1.0.tar.gz** was used in the proof of concept of [KIPEs](https://doi.org/10.3390/plants9091103) analysing the [transcriptome assembly of *Croton tiglium*](https://doi.org/10.3389/fmolb.2018.00062). This data set comprises transcription factors belonging to the three families MYB, bHLH, and WDR.
 MYBs: *Arabidopsis thaliana* [Stracke et al., 2001](https://doi.org/10.1016/S1369-5266(00)00199-0), *Vitis vinifera* [Matus et al., 2008](https://bmcplantbiol.biomedcentral.com/articles/10.1186/1471-2229-8-83), *Beta vulgaris* [Stracke et al., 2014](https://bmcplantbiol.biomedcentral.com/articles/10.1186/s12870-014-0249-8), and *Musa acuminata* [Pucker et al., 2020](https://doi.org/10.1101/2020.02.03.932046); 
 bHLHs: *Arabidopsis thaliana* [Heim et al., 2003](https://academic.oup.com/mbe/article/20/5/735/985548), *Vitis vinifera* [Wang et al., 2018](https://www.frontiersin.org/articles/10.3389/fpls.2018.00064/full), *Nelumbo nucifera* [Mao et al., 2019](https://peerj.com/articles/7153/), *Citrus grandis* [Zhang et al., 2020](https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-020-6644-7), *Musa acuminata* [Wang et al., 2020](https://doi.org/10.3389/fpls.2020.00650), and *Solanum melongena* [Tian et al., 2019](https://doi.org/10.7717/peerj.7768);
 WDRs: *Arabidopsis thaliana* [Nocker et al., 2003](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC317288/), *Triticum aestivum* [Hu et al., 2018](https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-018-5157-0), and *Setaria italica* [Mishra et al., 2014](https://doi.org/10.1371/journal.pone.0086852)
@@ -226,4 +226,4 @@ FastTree2: https://doi.org/10.1371/journal.pone.0009490
 
 When using KIPEs in your research, please cite:
 
-Automatic identification of players in the flavonoid biosynthesis with application on the biomedicinal plant Croton tiglium. Boas Pucker, Franziska Reiher, Hanna Marie Schilbert. bioRxiv 2020.06.27.175067; doi: https://doi.org/10.1101/2020.06.27.175067
+Automatic identification of players in the flavonoid biosynthesis with application on the biomedicinal plant Croton tiglium. Boas Pucker, Franziska Reiher, Hanna Marie Schilbert. Plants 2020, 9, 1103. doi:[10.3390/plants9091103](https://doi.org/10.3390/plants9091103).
