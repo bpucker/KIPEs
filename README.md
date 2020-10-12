@@ -76,13 +76,12 @@ Mandatory:
   --simcut         FLOAT  Minimal similarity of BLAST hits [40.0]
   --checks         STR    Validation of input data (on|off)[on]
    
-   --simcut        FLOAT  Minimal BLAST hit similarity in percent [40.0]
-   --genesize      INT    Maximal gene size (for tblastn hit grouping) [5000]
-   --minsim        FLOAT  Minimal similarity required in global alignment [0.4]
-   --minres        FLOAT  Minimal proportion of conserved residues [-1.0]
-   --minreg        FLOAT  Minimal proportion of conserved regions [-1.0]
-   --pathway       STR    Full path to text file with pathway enzyme names (default is alphabetical sorting)
-   --possibilities INT    Maximal number of enzyme functions to consider per sequence [3]
+  --genesize      INT    Maximal gene size (for tblastn hit grouping) [5000]
+  --minsim        FLOAT  Minimal similarity required in global alignment [0.4]
+  --minres        FLOAT  Minimal proportion of conserved residues [-1.0]
+  --minreg        FLOAT  Minimal proportion of conserved regions [-1.0]
+  --pathway       STR    Full path to text file with pathway enzyme names (default is alphabetical sorting)
+  --possibilities INT    Maximal number of enzyme functions to consider per sequence [3]
    
   --mafft          STR    Full path to MAFFT (if not in your $PATH)
   --blastp         STR    Full path to the BLASTp binary (if not in your $PATH)
