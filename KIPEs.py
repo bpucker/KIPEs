@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-__version__ = "v0.261"
+__version__ = "v0.262"
 
 __usage__ = """
 					python KIPEs.py
@@ -106,7 +106,7 @@ def load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, simi
 					genes.append( hit['gene'] )
 		final_valid_blast_hits.update( { key: genes } )
 	
-	return valid_blast_hits
+	return final_valid_blast_hits
 
 
 def  find_sisters_in_tree( tree_file ):
@@ -194,7 +194,7 @@ def tree_based_classification( blast_result_file, self_scores, score_ratio_cutof
 	# --- process all valid BLAST results --- #
 	for key in valid_blast_hits.keys():
 		if len( valid_blast_hits[ key ] ) == 1:
-			final_results.update( { key: { 'gene': [ valid_blast_hits[ key ][0]['gene'] ] } } )
+			final_results.update( { key: [ valid_blast_hits[ key ][0]['gene'] ] } )
 		else:
 			# --- build tree --- #
 			seq_file = tree_tmp + key + ".fasta"
@@ -219,7 +219,7 @@ def tree_based_classification( blast_result_file, self_scores, score_ratio_cutof
 				for s, sister in enumerate( sisters ):
 					if s < possibility_cutoff:
 						genes.append( sister )	#sister.split('_%_')[0]
-				final_results.update( { key: { 'gene': genes } } )
+				final_results.update( { key: genes } )
 	return final_results
 
 
@@ -344,8 +344,8 @@ def generate_global_alignments( mafft, peps, blast_hits, tmp_dir, ref_seqs ):
 	alignment_per_candidate = {}
 	candidates_by_gene = {}
 	for candidate in blast_hits.keys():
-		for hit in  blast_hits[ candidate ]:
-			gene = hit['gene']
+		genes = blast_hits[ candidate ]
+		for gene in genes:
 			try:
 				candidates_by_gene[ gene ].append( candidate )
 			except KeyError:
@@ -365,7 +365,7 @@ def generate_global_alignments( mafft, peps, blast_hits, tmp_dir, ref_seqs ):
 				alignment_per_candidate[ candidate ].update( { gene: load_alignment( aln_file, tmp_mapping ) } )
 			except KeyError:
 				alignment_per_candidate.update( { candidate: { gene: load_alignment( aln_file, tmp_mapping ) } } )
-		
+	
 	# --- get all query sequence names per gene --- #
 	query_names_by_gene = {}
 	for ref in [ x for sublist in ref_seqs.values() for x in sublist]:	#walk through all query sequences
