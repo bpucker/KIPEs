@@ -1,11 +1,11 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-__version__ = "v0.255"
+__version__ = "v0.26"
 
 __usage__ = """
 					python KIPEs.py
 					--baits <FOLDER_WITH_BAIT_SEQ_FILES>
-					--positions <FOLDER_WITH_POSITION_FILES>
+					--positions <FOLDER_WITH_POSITION_FILES>|--residues
 					--out <OUTPUT_DIR>
 					--subject <SUBJECT_FILE (peptide,transcript,genomic sequences)> | --subjectdir <SUBJECT_FOLDER_WITH_SEQ_FILES>
 					
@@ -1565,7 +1565,10 @@ def main( arguments ):
 	if '--positions' in arguments:
 		pos_data_dir = arguments[ arguments.index('--positions')+1 ]
 	else:
-		pos_data_dir = ""
+		if '--residues' in arguments:
+			pos_data_dir = arguments[ arguments.index('--residues')+1 ]
+		else:
+			pos_data_dir = ""
 	
 	if '--seqtype' in arguments:
 		seqtype = arguments[ arguments.index('--seqtype')+1 ]
