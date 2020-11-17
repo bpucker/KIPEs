@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-__version__ = "v0.26"
+__version__ = "v0.261"
 
 __usage__ = """
 					python KIPEs.py
@@ -103,7 +103,7 @@ def load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, simi
 		for hit in hits:
 			if hit['gene'] not in genes:
 				if len( genes ) < possibility_cutoff:
-					genes.append( gene )
+					genes.append( hit['gene'] )
 		final_valid_blast_hits.update( { key: genes } )
 	
 	return valid_blast_hits
@@ -344,7 +344,8 @@ def generate_global_alignments( mafft, peps, blast_hits, tmp_dir, ref_seqs ):
 	alignment_per_candidate = {}
 	candidates_by_gene = {}
 	for candidate in blast_hits.keys():
-		for gene in blast_hits[ candidate ]['gene']:
+		for hit in  blast_hits[ candidate ]:
+			gene = hit['gene']
 			try:
 				candidates_by_gene[ gene ].append( candidate )
 			except KeyError:
@@ -364,7 +365,7 @@ def generate_global_alignments( mafft, peps, blast_hits, tmp_dir, ref_seqs ):
 				alignment_per_candidate[ candidate ].update( { gene: load_alignment( aln_file, tmp_mapping ) } )
 			except KeyError:
 				alignment_per_candidate.update( { candidate: { gene: load_alignment( aln_file, tmp_mapping ) } } )
-	
+		
 	# --- get all query sequence names per gene --- #
 	query_names_by_gene = {}
 	for ref in [ x for sublist in ref_seqs.values() for x in sublist]:	#walk through all query sequences
@@ -1375,7 +1376,7 @@ def generate_summary_html( html_file, summary, peps, cons_pos_per_pep_extra, pat
 			new_line = []
 			new_line.append( "<td>" + entry['gene'] + "</td>" )	#gene name (function in pathway)
 			new_line.append( "<td>" + entry['label'] + "</td>" )	#sequence ID
-			new_line.append( "<td>" + str( entry['sim'] ) + "%</td>" )	#sequence ID
+			new_line.append( "<td>" + str( round( entry['sim'], 3 ) ) + "%</td>" )	#sequence ID
 			
 			try:
 				residues_per_gene = pos_data_per_gene[ entry['gene'] ]['residues']	#[ { 'aa': X, 'pos': int( res[1:] ) }, { 'aa': X, 'pos': int( res[1:] ) }, ...]
@@ -1391,7 +1392,7 @@ def generate_summary_html( html_file, summary, peps, cons_pos_per_pep_extra, pat
 				new_line.append( "<td>.</td>" )
 			
 			chunks = [ peps[ entry['id'] ][i:i+100] for i in range( 0, len( peps[ entry['id'] ] ), 100 ) ]
-			new_line.append( "<td>" + "<br>".join( chunks ) + "</td>" )	#add link to final peptide files
+			new_line.append( "<td>" + "<br>".join( chunks ) + "<br></td>" )	#add link to final peptide files
 			
 			
 			out.write( "<tr>" + "".join( new_line ) + "</tr>\n" )
