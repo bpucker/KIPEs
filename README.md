@@ -200,6 +200,44 @@ Arguments:
 As this tool is an automatic identification pipeline for candidate genes, the resolution of this analysis might be inferior to a manual annotation in certain cases like ODDs (F3H, FLS, LDOX). Therefore, it is recommended to carefully inspect the results from this pipeline. Generally, the quality of results is depending on the input quality. This pipeline was developed for the annotation of genes in the flavonoid biosynthesis of plants, but could be applied to other pathways if sufficient information is available.
 
 
+### Automatic construction of gene trees ###
+
+Once KIPEs identified candidate sequences for all the steps in a pathway or all members of a gene family, users might be interested to see these sequences in a phylogenetic tree. Since it is time consuming to construct single gene trees for all steps of the flavonoid biosynthesis, we added a script to do this automatically.
+
+
+```
+Usage:
+  python forester.py --in <DIR> --out <DIR> --ref <DIR>
+ 
+Mandatory:
+  --in          STR    Directory with (multiple) FASTA files (KIPEs results folder 'final_pep_files')
+  --out         STR    Output directory
+  --ref         STR    Directory containing multiple FASTA file with reference sequences (e.g. initial baits)
+		
+  Optional:
+  --occ         FLOAT  Minimal occupancy in alignment columns
+  --clean       STR    Activates the removal of all intermediate files
+  --mafft       STR    Full path to MAFFT (if not in your $PATH)
+  --fasttree    STR    Full path to the FastTree binary (if not in your $PATH)
+```
+
+
+`--in` is the full path to the folder 'final_pep_files' in the KIPEs output. This folder contains FASTA files which are used for the construction of gene trees.
+
+`--out` is the output folder. All FASTA files and trees will be stored in this folder. If the folder does not exist already, it will be created.
+
+`--ref` is a full path with FASTA files that serve as reference in the gene tree. This could be the folder with initial bait sequences used for KIPEs.
+
+`--occ` defines the minimal alignment column occupancy. Columns with more gaps than specified by occ, will be removed prior to the gene tree construction.
+
+`--clean` activates the removal of all intermediate files. This option is off by default to allow inspection of temporary files and to avoid removal of folders by accident.
+
+`--mafft` specifies the MAFFT path if this is not globally available.
+
+`--fasttree` specifies the FastTree path if this is not globally available.
+
+
+
 ## Data sets
 
 **baits.tar.gz** recommended data sets for analysing the flavonoid biosynthesis in a new species.
