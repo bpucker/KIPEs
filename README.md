@@ -254,13 +254,13 @@ WDRs: *Arabidopsis thaliana* [Nocker et al., 2003](https://www.ncbi.nlm.nih.gov/
 
 #### MYB (this dataset will be updated continuously) ###
 
-*Arabidopsis thaliana* [Stracke et al., 2001](https://doi.org/10.1016/S1369-5266(00)00199-0) (v1.0)
+(v1.0) *Arabidopsis thaliana* [Stracke et al., 2001](https://doi.org/10.1016/S1369-5266(00)00199-0):The R2R3-MYB gene family in Arabidopsis thaliana
 
-*Vitis vinifera* [Matus et al., 2008](https://bmcplantbiol.biomedcentral.com/articles/10.1186/1471-2229-8-83) (v1.0)
+(v1.0) *Vitis vinifera* [Matus et al., 2008](https://bmcplantbiol.biomedcentral.com/articles/10.1186/1471-2229-8-83): Analysis of the grape MYB R2R3 subfamily reveals expanded wine quality-related clades and conserved gene structure organization across Vitis and Arabidopsis genomes
 
-*Beta vulgaris* [Stracke et al., 2014](https://bmcplantbiol.biomedcentral.com/articles/10.1186/s12870-014-0249-8) (v1.0)
+(v1.0) *Beta vulgaris* [Stracke et al., 2014](https://bmcplantbiol.biomedcentral.com/articles/10.1186/s12870-014-0249-8): Genome-wide identification and characterisation of R2R3-MYB genes in sugar beet (Beta vulgaris)
 
-*Musa acuminata* [Pucker et al., 2020](https://doi.org/10.1101/2020.02.03.932046) (v1.0)
+(v1.0) *Musa acuminata* [Pucker et al., 2020](https://doi.org/10.1371/journal.pone.0239275): The R2R3-MYB gene family in banana (Musa acuminata): genome-wide identification, classification and expression patterns
 
 
 
