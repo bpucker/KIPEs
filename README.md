@@ -253,9 +253,13 @@ WDRs: *Arabidopsis thaliana* [Nocker et al., 2003](https://www.ncbi.nlm.nih.gov/
 
 
 #### MYB (this dataset will be updated continuously) ###
+
 *Arabidopsis thaliana* [Stracke et al., 2001](https://doi.org/10.1016/S1369-5266(00)00199-0) (v1.0)
+
 *Vitis vinifera* [Matus et al., 2008](https://bmcplantbiol.biomedcentral.com/articles/10.1186/1471-2229-8-83) (v1.0)
+
 *Beta vulgaris* [Stracke et al., 2014](https://bmcplantbiol.biomedcentral.com/articles/10.1186/s12870-014-0249-8) (v1.0)
+
 *Musa acuminata* [Pucker et al., 2020](https://doi.org/10.1101/2020.02.03.932046) (v1.0)
 
 
