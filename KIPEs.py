@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-__version__ = "v0.262"
+__version__ = "v0.27"
 
 __usage__ = """
 					python KIPEs.py
@@ -27,13 +27,22 @@ __usage__ = """
 					--tblastn <PATH_TO_AND_INCLUDING_BINARY>[tblastn]
 					--makeblastdb <PATH_TO_AND_INCLUDING_BINARY>[makeblastdb]
 					
-					--fasttree <PATH_TO_FASTTREE>
+					--fasttree <PATH_TO_FASTTREE>(recommended for tree building)
+					
+					--forester <ACTIVATES_GENE_TREE_CONSTRUCTION>[off]
+					--exp <GENE_EXPRESSION_FILE_ACTIVATES_COEXPRESSION_ANALYSIS>[off]
 					
 					bug reports and feature requests: bpucker@cebitec.uni-bielefeld.de
 					"""
 
-import os, glob, sys, time, re
+import os, glob, sys, time, re, math
 from operator import itemgetter
+try:
+	from scipy import stats
+except:
+	sys.stdout.write(  "WARNING: scipy import failed. Analysis of co-expression will not be possible. Please ensure that scipy is installed.\n" )
+	sys.stdout.flush()
+
 
 # --- end of imports --- #
 
@@ -1400,19 +1409,275 @@ def generate_summary_html( html_file, summary, peps, cons_pos_per_pep_extra, pat
 		out.write( "</table>\n" )
 
 
-def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff ):
-	"""! @brief run whole KIPEs analysis for one subject sequence file """
+### ---- FORESTER ###
+
+
+def modify_FASTA_names( input_file, output_file, mapping_table_file ):
+	"""! @brief modify names in FASTA file """
 	
+	seqs = load_sequences( input_file )
+	mapping_table = {}
+	with open( output_file, "w" ) as out:
+		for idx, key in enumerate( seqs.keys() ):
+			out.write( '>seq' + str( idx ).zfill(5) + '\n' + seqs[ key ] + '\n' )
+			mapping_table.update( { key: 'seq' + str( idx ).zfill(5) } )
+	
+	with open( mapping_table_file, "w" ) as out:
+		for key in mapping_table.keys():
+			if len( key ) == 0:
+				sys.exit( "ERROR: " + seqs[ key ] )
+			out.write( key + '\t' + mapping_table[ key ] + '\n' )
+
+
+def load_mapping_table( mapping_table_file ):
+	"""! @brief load mapping table """
+	
+	mapping_table = {}
+	with open( mapping_table_file, "r" ) as f:
+		line = f.readline()
+		while line:
+			parts = line.strip().split('\t')
+			mapping_table.update( { parts[1]: parts[0] } )
+			line = f.readline()
+	return mapping_table
+
+
+def modify_names_in_tree( input_tree_file, output_tree_file, mapping_table_file ):
+	"""! @brief replace short names in tree by original names """
+	
+	mapping_table = load_mapping_table( mapping_table_file )
+	
+	with open( input_tree_file, "r" ) as f:
+		tree = f.read()
+	
+	for key in mapping_table.keys():
+		tree = tree.replace( key, mapping_table[ key ] )
+	
+	with open( output_tree_file, "w" ) as out:
+		out.write( tree )
+
+
+def construct_tree( input_file,  output_dir, mafft, fasttree, occupancy, name ):
+	"""! @brief handle tree construction """
+		
+	if output_dir[-1] != '/':
+		output_dir += "/"
+	
+	if not os.path.exists( output_dir ):
+		os.makedirs( output_dir )
+	
+	mod_FASTA = output_dir + "names_modified.fasta"
+	mapping_table_file = output_dir + "seq_names_mapping_table.txt"
+	modify_FASTA_names( input_file, mod_FASTA, mapping_table_file )
+	
+	alignment_file = mod_FASTA + ".aln"
+	os.popen( " ".join( [ mafft, mod_FASTA, ">", alignment_file, "2>", alignment_file+".log" ] ) )
+	
+	clean_alignment_file = alignment_file + ".cln"
+	alignment_trimming( alignment_file, clean_alignment_file, occupancy )
+	
+	tree_file = clean_alignment_file + ".tre"
+	os.popen( " ".join( [ fasttree, "-wag -nosupport <", clean_alignment_file, ">", tree_file, "2>", tree_file+".log" ] ) )
+	
+	output_tree_file = output_dir + name + "FINAL_TREE.tre"
+	modify_names_in_tree( tree_file, output_tree_file, mapping_table_file )
+	
+	return output_tree_file
+
+
+def forester( input_folder, output_folder, refseq_folder, mafft, fasttree, occupancy ):
+	"""! @brief run everything """
+	
+	clean = False	#temporary files are stored
+	
+	if not os.path.exists( output_folder ):
+		os.makedirs( output_folder )
+	
+	input_files = glob.glob( input_folder + "*.fasta" )
+	
+	for m, filename in enumerate( input_files ):
+		ID = filename.split('/')[-1].replace( ".fasta", "" )
+		sys.stdout.write( "processing: " +  ID + " - (" + str( m+1 ) + "/" + str( len( input_files ) ) + ")\n" )
+		sys.stdout.flush()
+		ref_seq_file = refseq_folder + ID + ".fasta"
+		tree_input_file = output_folder + ID + ".fasta"
+		if os.path.isfile( ref_seq_file ):
+			os.popen( "cat " + filename + " " + ref_seq_file + " > " + tree_input_file )
+			tree_tmp_folder = output_folder + ID + "_tmp/"
+
+			tree = construct_tree( tree_input_file, tree_tmp_folder, mafft, fasttree, occupancy, ID )
+			
+			os.popen( "cp " + tree + " " + output_folder + ID + ".tre" )
+			if clean:
+				os.popen( "rm -r " + tree_tmp_folder )	#remove temp folders
+
+
+
+### --- COEXPRESSION --- ###
+
+def load_expression_values( filename ):
+	"""! @brief load all expression values """
+	
+	expression_data = {}
+	with open( filename, "r" ) as f:
+		tissues = f.readline().strip().split('\t')[1:]
+		line = f.readline()
+		while line:
+			parts = line.strip().split('\t')
+			expression = {}
+			for idx, each in enumerate( parts[1:] ):
+				expression.update( { tissues[  idx ] : float( parts[ idx+1 ] ) } )
+			line = f.readline()
+			expression_data.update( { parts[0]: expression } )
+	return expression_data
+
+
+def one_vs_all_coexp( candidate, candidate_genes, gene_expression ):
+	"""! @brief compare candidate gene expression against all genes to find co-expressed genes """
+	
+	tissues = sorted( gene_expression[ gene_expression.keys()[0] ].keys() )
+	coexpressed_genes = {}
+	for i, gene2 in enumerate( candidate_genes ):
+		if candidate != gene2:
+			values = []
+			total_expression = 0
+			for tissue in tissues:
+				try:
+					x = gene_expression[ candidate ][ tissue ]
+					y = gene_expression[ gene2 ][ tissue ]
+					total_expression += y
+					if not math.isnan( x ) and not math.isnan( y ) :
+						values.append( [ x, y ] )
+				except KeyError:
+					sys.stdout.write( "ERROR (coexp): tissue not found - " + tissue+ "\n" )
+					sys.stdout.flush()
+			r, p = stats.spearmanr( values )
+			if not math.isnan( r ) and total_expression > 30:
+				if r > 0.3 and p < 0.05:
+					coexpressed_genes.update( { gene2: r } )
+	return coexpressed_genes
+
+
+def load_genes_of_interest( KIPEs_summary_file ):
+	"""! @brief load genes per step in pathway """
+	
+	genes_per_function = {}
+	with open( KIPEs_summary_file, "r" ) as f:
+		f.readline()	#remove header
+		line = f.readline()
+		while line:
+			parts = line.strip().split('\t')
+			step = parts[1].split('_')[0]
+			try:
+				genes_per_function[ step ].append( parts[0] )
+			except KeyError:
+				genes_per_function.update( { step: [ parts[0] ] } )
+			line = f.readline()
+	return genes_per_function
+	
+
+def construct_html_output( html_file, genes_per_function, function_order, coexp_per_gene ):
+	"""! @brief generate HTML heatmap """
+	
+	html_string = '<html><style>#rotator {transform: rotate(-90deg); height: 250px; width: 10px;} </style><table>'
+	
+	html_string += '<tr style="width:10px" ><th id="rotator">Function_GeneID</th>'
+	for function in function_order:
+		genes = sorted( genes_per_function[ function ] )
+		for gene in genes:
+			html_string += '<th id="rotator">'+function + "_" + gene+"</th>\n"
+	html_string += "</tr>\n"
+	
+	for function1 in function_order:
+		genes = sorted( genes_per_function[ function1 ] )
+		for gene in genes:
+			html_string += "<tr><td>" + function1 + "_" + gene + "</td>\n"
+			for function2 in function_order:
+				genes2 = sorted( genes_per_function[ function2 ] )
+				for gene2 in genes2:
+					try:
+						html_string += '<td style="width:10px" bgcolor="' + calculate_color( coexp_per_gene[ gene ][ gene2 ] ) + '"><span title="' + function1 +"_"+ gene + " & " + function2 +"_"+ gene2 + '">' + str( round( coexp_per_gene[ gene ][ gene2 ], 3 ) ) + "</span></td>\n"
+					except KeyError:
+						html_string += '<td style="width:10px" bgcolor="#FFFFFF"><span title="' + function1 +"_"+ gene + " & " + function2 +"_"+ gene2 + '">0</span></td>\n'
+			html_string += "</tr>\n"
+			
+	html_string += "</table></html>\n"
+
+	with open( html_file, "w" ) as out:
+		out.write( html_string )
+
+
+def calculate_color( value ):
+	"""! @brief calculates color for given value """
+	
+	r = 255
+	g = 255-int( 255*value )
+	b = 255-int( 255*value )
+	
+	color = '#%02x%02x%02x' % (r, g, b)
+	
+	return color
+
+
+def automatic_coexp( expression_file, output_file, KIPEs_summary_file ):
+	"""! @brief run automatic co-expression analysis for all candidates identified by KIPEs """
+
+	gene_expression = load_expression_values( expression_file )
+	genes_per_function = load_genes_of_interest( KIPEs_summary_file )
+	
+	candidate_genes = [ x for function in genes_per_function.values() for x in function ]
+	
+	
+	coexp_per_gene = {}
+	for gene in candidate_genes:
+		coexp_per_gene.update( { gene: one_vs_all_coexp( gene, candidate_genes, gene_expression ) } )
+	
+	
+	function_order = sorted( genes_per_function.keys() )	#steps in the pathway
+	with open( output_file, "w" ) as out:
+		out.write( "\t".join( [ "Function", "GeneID" ] + function_order ) + "\n" )
+		for function1 in function_order:
+			candidates1 = genes_per_function[ function1 ]
+			data_per_candidate = []
+			for candidate1 in candidates1:
+				values_per_function = []
+				for function2 in function_order:
+					candidates2 = genes_per_function[ function2 ]
+					values = []
+					for candidate2 in candidates2:
+						try:
+							values.append( coexp_per_gene[ candidate1 ][ candidate2 ] )
+						except KeyError:
+							pass
+					if len( values ) > 0:
+						values_per_function.append( round( float( sum( values ) ) / len( values ), 3 ) )
+					else:
+						values_per_function.append( 0 )
+				data_per_candidate.append( { 'ID': candidate1, 'val': float( sum( values_per_function ) ) / len( values_per_function ), 'rawval': values_per_function } )
+			best_candidate = sorted( data_per_candidate, key=itemgetter('val') )[::-1]	[0]
+			best_values = data_per_candidate[ candidates1.index( best_candidate['ID'] ) ]['rawval']
+			out.write( "\t".join( [ function1, best_candidate['ID'] ] + map( str, best_values ) ) + "\n" )
+	
+	html_file = output_file + ".html"
+	construct_html_output( html_file, genes_per_function, function_order, coexp_per_gene )
+
+
+def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff, exp_file, forester_state ):
+	"""! @brief run whole KIPEs analysis for one subject sequence file """
+		
 	errors = validate_input( pos_data_dir, bait_seq_data_dir, makeblastdb, blastp, tblastn, mafft, fasttree )
 	if len( errors ) > 0:
 		for error in errors:
 			if error['seq']:
 				if error['len']:
-					print "ERROR: conserved residue position in sequence " + error['seq'] + " of " + error['gene'] + " exceeds sequence length."
+					sys.stdout.write( "ERROR: conserved residue position in sequence " + error['seq'] + " of " + error['gene'] + " exceeds sequence length.\n" )
+					sys.stdout.flush()
 				else:
-					print "ERROR: conserved residue sequence " + error['seq'] + " of " + error['gene'] + " is not matching bait sequences."
+					sys.stdout.write( "ERROR: conserved residue sequence " + error['seq'] + " of " + error['gene'] + " is not matching bait sequences.\n" )
+					sys.stdout.flush()
 			else:
-				print "ERROR: no conserved residue information detected for " + error['gene'] + "."
+				sys.stdout.write( "ERROR: no conserved residue information detected for " + error['gene'] + ".\n" )
+				sys.stdout.flush()
 		if checks == "on":
 			sys.exit( "ERROR: Execution of script terminated due to errors. Fix errors or set '--checks' to 'off' in order to proceed." )
 	
@@ -1433,11 +1698,13 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 	peptide_file = output_dir + "subject.fasta"
 	subject_name_file = output_dir + "subject_names.txt"
 	if seqtype == "pep":
-		print "INFO: Input sequences are peptides >> candidate detection can start directly."
+		sys.stdout.write( "INFO: Input sequences are peptides >> candidate detection can start directly.\n" )
+		sys.stdout.flush()
 		if not os.path.isfile( peptide_file ):
 			generate_subject_file( peptide_file, subject_name_file, subject )
 	elif seqtype == "rna":
-		print "INFO: Input sequences are DNA (transcripts expected) >> in silico translation will be performed in all 6 frames ..."
+		sys.stdout.write( "INFO: Input sequences are DNA (transcripts expected) >> in silico translation will be performed in all 6 frames ...\n" )
+		sys.stdout.flush()
 		min_len_cutoff = 50	#minimal number of amino acids to keep a sequence as peptide
 		translate_to_generate_pep_file( peptide_file, subject_name_file, subject, min_len_cutoff )
 	
@@ -1542,6 +1809,18 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 	generate_summary_html( html_file, summary, peps, cons_pos_per_pep_extra, pathway, pos_data_per_gene )
 
 	#build phylogenetic tree with landmark sequences
+	if forester_state:
+		forester_output_folder = output_dir + "gene_trees/"
+		if len( fasttree ) == 0:
+			fasttree = "FastTree"
+		forester( final_pep_folder, forester_output_folder, bait_seq_data_dir, mafft, fasttree, occupancy=0.1 )
+		
+	if len( exp_file ) > 0:
+		coexp_output_folder = output_dir + "coexpression/"
+		if not os.path.exists( coexp_output_folder ):
+			os.makedirs( coexp_output_folder )
+		output_file = coexp_output_folder + "coexp_summary.txt"
+		automatic_coexp( exp_file, output_file, summary_file )
 
 
 def main( arguments ):
@@ -1601,10 +1880,12 @@ def main( arguments ):
 	
 	if '--fasttree' in arguments:
 		fasttree = arguments[ arguments.index('--fasttree')+1 ]
-		print "INFO: classification of candidates will be based on phylogenetic trees."
+		sys.stdout.write(  "INFO: classification of candidates will be based on phylogenetic trees.\n" )
+		sys.stdout.flush()
 	else:
 		fasttree = ""
-		print "INFO: classification of candidates will be based on BLAST hit similarity."
+		sys.stdout.write(  "INFO: classification of candidates will be based on BLAST hit similarity.\n" )
+		sys.stdout.flush()
 	
 	if '--cpus' in arguments:
 		cpus = int( arguments[ arguments.index('--cpus')+1 ] )
@@ -1659,20 +1940,40 @@ def main( arguments ):
 	
 	for subject in subjects:
 		if not os.path.isfile( subject ):
-			print "ERROR: subject file not detected: " + subject
+			sys.stdout.write( "ERROR: subject file not detected: " + subject + "\n" )
+			sys.stdout.flush()
 	
 	if not os.path.exists( bait_seq_data_dir ):
 		sys.exit( "ERROR: bait sequence folder not detected!" )
 	
 	time.sleep( 10 )
 	
+	if '--exp' in arguments:
+		exp_file = arguments[ arguments.index('--exp')+1 ]
+		sys.stdout.write( "Co-expression analysis activated.\n" )
+		sys.stdout.flush()
+		if not os.path.isfile( exp_file ):
+			sys.stdout.write( "ERROR: gene expression file not detected - " + exp_file + "\n" )
+			sys.stdout.flush()
+	else:
+		exp_file = ""
+	
+	if '--forester' in arguments:
+		forester_state = True
+		sys.stdout.write( "Gene tree construction activated.\n" )
+		sys.stdout.flush()
+	else:
+		forester_state = False
+	
 	# --- run KIPEs for each supplied subject file --- #
-	print "number of subjects to process: " + str( len( subjects ) )
+	sys.stdout.write( "number of subjects to process: " + str( len( subjects ) ) + "\n" )
+	sys.stdout.flush()
 	for xxx, subject in enumerate( subjects ):
 		KIPEs( 	bait_seq_data_dir, output_dirs[ xxx ], subject, pos_data_dir, seqtype,
 					mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file,
 					cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size,
-					xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff
+					xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff,
+					exp_file, forester_state
 				)
 
 
