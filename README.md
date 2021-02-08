@@ -92,6 +92,9 @@ Mandatory:
   --makeblastdb    STR    Full path to the makeblastdb binary (if not in your $PATH)
   
   --fasttree       STR    Full path to the FastTree binary
+  
+  --forester       STR    Activates the automatic construction of gene trees (on|off)[on]
+  --exp            STR    Gene expression file (activates heatmap construction)
 ```
 
 
@@ -149,8 +152,10 @@ Domains: The domain entry indicator (D) is followed by the name of the domain in
 `--makeblastdb` full path to makeblastdb binary if this is not included in $PATH. BLAST can be downloaded from the [NCBI](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download).
 
 `--fasttree` full path to FastTree binary. If this option is set, a phylogenetic tree is used to classify candidate sequences. FastTree can be downloaded as a single binary file here: http://www.microbesonline.org/fasttree/ .
-  
-  
+
+`--forester` activates the automatic construction of gene tree with all identified candidates. One tree per step in the pathway is constructed with FastTree. The construction of gene trees requires that the `--fasttree`  is used. Otherwise, FastTree is expected in the $PATH. Default: off.
+
+`--exp` specifies gene expression file. The first column contains the gene IDs which need to match the sequence IDs of the dataset analyzed by KIPEs. The first row contains the names of samples. Providing a gene expression file activates the construction of a co-expression heatmap with all candidate genes. Default: off.
   
 
 ### Generating tables of conserved residues
