@@ -1,5 +1,8 @@
 # KIPEs (Knowledge-based Identification of Pathway Enzymes)
 
+### Please get in touch if you need help running KIPEs on your own dataset: bpucker{at}cebitec.uni-bielefeld.de ###
+
+
 ## Abstract
 
 This tool enables the identification of candidate sequences in a collection of peptide sequences, transcript sequences, or in a genome sequence. An initial BLAST (BLASTp, tBLASTn) search is used to get putative sequences which are than analysed in a global alignment with MAFFT and screened for the presence of conserved residues and conserved domains. As a proof of concept, this tool was applied for the identification of genes in the flavonoid biosynthesis.
