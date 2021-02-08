@@ -264,6 +264,9 @@ WDRs: *Arabidopsis thaliana* [Nocker et al., 2003](https://www.ncbi.nlm.nih.gov/
 
 (v1.1) *Croton tiglium* [Pucker et al., 2020](https://doi.org/10.3390/plants9091103): Automatic identification of players in the flavonoid biosynthesis with application on the biomedicinal plant Croton tiglium
 
+(v1.1) *Marchantia polymorpha* (Pucker, 2021): Genome-wide identification of *Marchantia polymorpha* MYBs via KIPEs
+
+
 
 
 ## References
