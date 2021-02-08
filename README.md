@@ -1,7 +1,6 @@
 # KIPEs (Knowledge-based Identification of Pathway Enzymes)
 
-### Please get in touch if you need help running KIPEs on your own dataset: ###
-### [Dr. Boas Pucker](mailto:bpucker@cebitec.uni-bielefeld.de?subject=[GitHub]KIPEs_request) ###
+### Please get in touch if you need help running KIPEs on your own dataset: [Dr. Boas Pucker (email)](mailto:bpucker@cebitec.uni-bielefeld.de?subject=[GitHub]KIPEs_request) ###
 
 
 ## Abstract
