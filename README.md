@@ -274,6 +274,7 @@ WDRs: *Arabidopsis thaliana* [Nocker et al., 2003](https://www.ncbi.nlm.nih.gov/
 
 (v1.1) *Marchantia polymorpha* (Pucker, 2021): Genome-wide identification of *Marchantia polymorpha* MYBs via KIPEs
 
+This dataset is a trade-off between covering a broad phylogenetic width and small size (=short run time). Please have a look at the [wiki](https://github.com/bpucker/KIPEs/wiki/Datasets) for more information about additional MYB sequence datasets.
 
 
 
