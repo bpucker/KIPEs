@@ -7,10 +7,6 @@
 
 This tool enables the identification of candidate sequences in a collection of peptide sequences, transcript sequences, or in a genome sequence. An initial BLAST (BLASTp, tBLASTn) search is used to get putative sequences which are than analysed in a global alignment with MAFFT and screened for the presence of conserved residues and conserved domains. As a proof of concept, this tool was applied for the identification of genes in the flavonoid biosynthesis.
 
-<a href="https://www.mdpi.com/2223-7747/9/9/1103/htm">
-<img alt="Flavonoid biosynthesis pathway overview" src="https://www.mdpi.com/plants/plants-09-01103/article_deploy/html/images/plants-09-01103-g001.png" width="25%" height="25%">
-</a>
-
 
 ## Input options
 
