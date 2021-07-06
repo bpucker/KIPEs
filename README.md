@@ -279,6 +279,35 @@ This dataset is a trade-off between covering a broad phylogenetic width and smal
 
 
 
+## Interested in another pathway?
+KIPEs is not restricted to analyzing the flavonoid biosynthesis. This README explains how to add a new pathway to KIPEs.
+
+IMPORTANT NOTICE: Please get in touch, we are already working on the integration of additional pathways. You might be able to save time and energy.
+
+## 1) find paper describing the pathway/reactions
+If you do not know all steps involved in the pathway of interest, you need to identify publications describing it. This is important to include all known steps in the following analysis.
+
+## 2) find initial characterized sequence(s)
+KIPEs is based on information already available in the literature and in databases. Therefore, it is crucial to identify well characterized bait sequences and conserved amino acid residues in the active center.
+
+## 3) run tree building script
+Yang et al., 2015 described a pipeline for the identification of orthologs based on an initial sequence. This can be used to prepare a collection of sequences for exploration is conserved amino acid residues are not known yet.
+
+## 4) collect resulting FASTA file
+
+
+## 5) construct tree via tree.py
+## 6) rename seqs in tree
+## 7) inspect tree manually in figtree; identify clade based on amborella/monocots; color clade in red
+## 8) extract red sequences
+## 9) repeat tree building and cleaning until final result
+
+
+
+
+
+
+
 ## References
 
 BLAST: https://doi.org/10.1016/S0022-2836(05)80360-2
