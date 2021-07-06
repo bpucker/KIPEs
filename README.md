@@ -282,7 +282,7 @@ This dataset is a trade-off between covering a broad phylogenetic width and smal
 ## Interested in another pathway?
 KIPEs is not restricted to analyzing the flavonoid biosynthesis. This README explains how to add a new pathway to KIPEs.
 
-IMPORTANT NOTICE: Please get in touch, we are already working on the integration of additional pathways. You might be able to save time and energy.
+IMPORTANT NOTICE: Please get in touch before constructing your own input files. We are already working on the integration of additional pathways. You might be able to save time and energy.
 
 ### 1) Find a paper describing the pathway/reactions of interest and at least one characterized sequence
 If you do not know all steps involved in the pathway of interest, you need to identify publications describing it. This is important to include all known steps in the following analysis. It is not possible to discover novel pathways using KIPEs. You need to identify at least a single characterized sequence for each step in the pathway - more are better.
