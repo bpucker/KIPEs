@@ -284,26 +284,17 @@ KIPEs is not restricted to analyzing the flavonoid biosynthesis. This README exp
 
 IMPORTANT NOTICE: Please get in touch, we are already working on the integration of additional pathways. You might be able to save time and energy.
 
-## 1) find paper describing the pathway/reactions
-If you do not know all steps involved in the pathway of interest, you need to identify publications describing it. This is important to include all known steps in the following analysis.
+### 1) Find a paper describing the pathway/reactions of interest and at least one characterized sequence
+If you do not know all steps involved in the pathway of interest, you need to identify publications describing it. This is important to include all known steps in the following analysis. It is not possible to discover novel pathways using KIPEs. You need to identify at least a single characterized sequence for each step in the pathway - more are better.
 
-## 2) find initial characterized sequence(s)
-KIPEs is based on information already available in the literature and in databases. Therefore, it is crucial to identify well characterized bait sequences and conserved amino acid residues in the active center.
+### 2) Run tree-based selection of additional sequences
+KIPEs is based on information already available in the literature and in databases. Therefore, it is crucial to identify well characterized bait sequences and conserved amino acid residues in the active center. You can complement this dataset by looking for orhtologs. These sequences require a manual inspection. Yang et al., 2015 described a pipeline for the identification of orthologs based on an initial sequence. This approach can also be used to prepare a collection of sequences for exploration if conserved amino acid residues are not known yet.
 
-## 3) run tree building script
-Yang et al., 2015 described a pipeline for the identification of orthologs based on an initial sequence. This can be used to prepare a collection of sequences for exploration is conserved amino acid residues are not known yet.
+### 3) Construct FASTA file of collected sequences
+The final result of this preliminary analysis is a FASTA file containing bait sequences for KIPEs. The quality of this sequence collection determines the quality of the KIPEs results.
 
-## 4) collect resulting FASTA file
-
-
-## 5) construct tree via tree.py
-## 6) rename seqs in tree
-## 7) inspect tree manually in figtree; identify clade based on amborella/monocots; color clade in red
-## 8) extract red sequences
-## 9) repeat tree building and cleaning until final result
-
-
-
+### 4) Construct file with conserved amino acid residues
+If possible, construct a file describing the positions of conserved amino acid residues. Relying on highly conserved residues might be an option if no additional information is available. However, the quality of this list of residues is decisive. See the descriptions above for details about the file structure.
 
 
 
