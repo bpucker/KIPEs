@@ -56,9 +56,9 @@ Full paths should be used to specify input and output files and folders. Sequenc
 
 ```
 Usage:
-  python KIPEs.py --baits <DIR> --out <DIR> --subject <FILE>
+  python3 KIPEs3.py --baits <DIR> --out <DIR> --subject <FILE>
   or
-  python KIPEs.py --baits <DIR> --out <DIR> --subjectdir <DIR>
+  python3 KIPEs3.py --baits <DIR> --out <DIR> --subjectdir <DIR>
 
 Mandatory:
   Bait sequences
@@ -244,6 +244,41 @@ Mandatory:
 `--mafft` specifies the MAFFT path if this is not globally available.
 
 `--fasttree` specifies the FastTree path if this is not globally available.
+
+
+
+### Collect KIPEs results ###
+
+When running KIPEs on a large number of data sets, it can be helpful to collect the best candidates in one table. This scripts allows filtering of the candidates and produces a summary table of all analyzed species:
+
+
+```
+Usage:
+  python3 collect_KIPEs_results.py --in <DIR> --out <DIR> --ref <DIR>
+ 
+Mandatory:
+  --in          STR    Directory with KIPEs result folders
+  --out         STR    Output file
+  --genes       STR    Comma-separated list of genes
+		
+  Optional:
+  --mapping     STR    Folder name to species name mapping
+  --minsim      FLOAT  Minimal similarity
+  --minmatches  FLOAT  Minimal residue match ratio
+```
+
+
+`--in` is the full path to the folder that contains the KIPEs result folder of the analyses of many species.
+
+`--out` is the full path to the output file that will contain the summarized information about the best candidates in all analyzed species.
+
+`--genes` is a list of all gene names that should be listed in the final resul table. The names of genes are comma-separated e.g. "CHS,CHI1,F3H".
+
+`--mapping` is the full path to a table that contains the name of folders in the directory provided via `--in` in the first column and the corresponding species name in the second column.
+
+`--minsiim` minimal similarity of a candidate to the bait sequences.[0.5]
+
+`--minmatches` minimal ratio of detected conserved amino acid residues.[0.9]
 
 
 
