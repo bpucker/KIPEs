@@ -296,7 +296,12 @@ bHLHs: *Arabidopsis thaliana* [Heim et al., 2003](https://academic.oup.com/mbe/a
 WDRs: *Arabidopsis thaliana* [Nocker et al., 2003](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC317288/), *Triticum aestivum* [Hu et al., 2018](https://bmcgenomics.biomedcentral.com/articles/10.1186/s12864-018-5157-0), and *Setaria italica* [Mishra et al., 2014](https://doi.org/10.1371/journal.pone.0086852)
 
 
-#### MYB (this dataset will be updated continuously) ###
+#### MYB ###
+
+Although KIPEs can be used to identify MYBs, it is recommend to use the **[MYB_annotator](https://github.com/bpucker/MYB_annotator)** instead. This dedicated tool allows a more reliable and computationally optimized identification of MYBs. Functional annotations are also added.
+
+<details>
+<summary>(click to expand)</summary>
 
 (v1.0) *Arabidopsis thaliana* [Stracke et al., 2001](https://doi.org/10.1016/S1369-5266(00)00199-0):The R2R3-MYB gene family in Arabidopsis thaliana
 
@@ -311,7 +316,9 @@ WDRs: *Arabidopsis thaliana* [Nocker et al., 2003](https://www.ncbi.nlm.nih.gov/
 (v1.1) *Marchantia polymorpha* (Pucker, 2021): Genome-wide identification of *Marchantia polymorpha* MYBs via KIPEs
 
 This dataset is a trade-off between covering a broad phylogenetic width and small size (=short run time). Please have a look at the [wiki](https://github.com/bpucker/KIPEs/wiki/Datasets) for more information about additional MYB sequence datasets.
-
+  
+  </p>
+</details>
 
 
 ## Interested in another pathway?
