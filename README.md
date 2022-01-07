@@ -349,6 +349,7 @@ MAFFT: https://doi.org/10.1093/molbev/mst010
 
 FastTree2: https://doi.org/10.1371/journal.pone.0009490
 
+dendropy: https://dendropy.org/ and https://doi.org/10.1093/bioinformatics/btq228
 
 When using KIPEs in your research, please cite:
 
