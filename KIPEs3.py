@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-__version__ = "v0.275"	#converted to Python3
+__version__ = "v0.3"	#converted to Python3
 
 __usage__ = """
 					python KIPEs3.py
@@ -35,7 +35,7 @@ __usage__ = """
 					bug reports and feature requests: bpucker@cebitec.uni-bielefeld.de
 					"""
 
-import os, glob, sys, time, re, math, subprocess
+import os, glob, sys, time, re, math, subprocess, dendropy
 from operator import itemgetter
 try:
 	from scipy import stats
@@ -118,27 +118,35 @@ def load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, simi
 	return final_valid_blast_hits
 
 
-def  find_sisters_in_tree( tree_file ):
-	"""! @brief find sister clade in phylogenetic tree """
+def  find_sisters_in_tree( tree_file, all_seq_IDs_in_tree ):
+	"""! @brief find sister clade in phylogenetic tree 
+			@note This function is based on the MYB_annotator: https://doi.org/10.1101/2021.10.16.464636
+	"""
 	
-	with open( tree_file, "r" ) as f:
-		tree = f.read()
-	ref_genes = re.findall( "[a-zA-Z0-9_\-]+_%_\d{3}", tree )
-	dist_per_gene = []
-	for gene in ref_genes:
-		parts = tree.split('CANDIDATE')
-		if gene in parts[0]:
-			region = parts[0].split( gene )[1]
-		else:
-			region = parts[1].split( gene )[0]
-		dist_per_gene.append( { 'id': gene, 'dist': region.count( '(' ) + region.count(')') } )
-	if len( dist_per_gene ) > 0:
+	if len( all_seq_IDs_in_tree ) > 0:
+		# --- find node objects of reference genes --- #
+		tree = dendropy.Tree.get_from_path( tree_file, "newick" )
+		pdm = dendropy.PhylogeneticDistanceMatrix.from_tree( tree )
+		my_mean_nearest_taxon_distance = pdm.mean_nearest_taxon_distance()
+		
+		ref_node_objects = []
+		new_node_objects = []
+		for node in tree.taxon_namespace:
+			if node.label == "CANDIDATE":
+				new_node_objects.append( node )
+			else:
+				ref_node_objects.append( node )
+		data = []
+		t1 = new_node_objects[0]
+		for t2 in ref_node_objects:	#calculate distance to all other sequences in tree
+			edge_distance = pdm.path_edge_count( t1, t2)
+			patr_distance = pdm.patristic_distance( t1, t2 )
+			data.append( { 'ref_gene': (t2.label).split('-%-')[0], 'edge': edge_distance, 'patr': patr_distance } )
 		sisters = []
-		for sister in sorted( dist_per_gene, key=itemgetter( 'dist' ) ):
-			gene = sister['id'].split('_%_')[0]
-			if gene not in sisters:
-				sisters.append( gene )
-		return sisters
+		for entry in sorted( data, key=itemgetter('edge', 'patr') ):
+			if entry['ref_gene'] not in sisters:
+				sisters.append( entry['ref_gene'] )
+		return sisters	#returns a sorted list of reference gene function names (closest homolog first)
 	else:
 		sys.stdout.write( "ERROR: " + tree_file + "\n" )
 		sys.stdout.flush()
@@ -208,10 +216,12 @@ def tree_based_classification( blast_result_file, self_scores, score_ratio_cutof
 		else:
 			# --- build tree --- #
 			seq_file = tree_tmp + key + ".fasta"
+			all_seq_IDs_in_tree = []
 			with open( seq_file, "w" ) as out:
 				out.write( '>CANDIDATE\n' + peps[ key ] + '\n'  )
 				for each in valid_blast_hits[ key ]:
-					out.write( '>' + each['id'] + '\n' + ref_seq_seqs[ each['id'] ] + '\n'  )
+					out.write( '>' + each['id'].replace('_',"-") + '\n' + ref_seq_seqs[ each['id'] ] + '\n'  )
+					all_seq_IDs_in_tree.append( each['id'].replace('_',"-") )
 			aln_file = seq_file + ".aln"
 			p = subprocess.Popen( args= " ".join( [ mafft, seq_file, ">", aln_file, "2>", aln_file+".err" ] ), shell=True )
 			p.communicate()
@@ -225,7 +235,7 @@ def tree_based_classification( blast_result_file, self_scores, score_ratio_cutof
 			p.communicate()
 			
 			# --- find reference seqs sister --- #
-			sisters = find_sisters_in_tree( tree_file )
+			sisters = find_sisters_in_tree( tree_file, all_seq_IDs_in_tree )
 			if len( sisters ) > 0:
 				genes = []
 				for s, sister in enumerate( sisters ):
@@ -1686,7 +1696,7 @@ def automatic_coexp( expression_file, output_file, KIPEs_summary_file ):
 
 def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff, exp_file, forester_state ):
 	"""! @brief run whole KIPEs analysis for one subject sequence file """
-		
+	
 	errors = validate_input( pos_data_dir, bait_seq_data_dir, makeblastdb, blastp, tblastn, mafft, fasttree )
 	if len( errors ) > 0:
 		for error in errors:
