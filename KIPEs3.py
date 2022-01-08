@@ -1,8 +1,13 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-__version__ = "v0.3"	#converted to Python3
+__version__ = "v0.31"	#converted to Python3
+
+__reference__ = "Pucker et al., 2020: https://doi.org/10.3390/plants9091103"
 
 __usage__ = """
+					KIPEs """ + __version__ + """("""+ __reference__ +""")
+					
+					Usage:
 					python KIPEs3.py
 					--baits <FOLDER_WITH_BAIT_SEQ_FILES>
 					--positions <FOLDER_WITH_POSITION_FILES>|--residues
@@ -33,6 +38,7 @@ __usage__ = """
 					--exp <GENE_EXPRESSION_FILE_ACTIVATES_COEXPRESSION_ANALYSIS>[off]
 					
 					bug reports and feature requests: bpucker@cebitec.uni-bielefeld.de
+					Complete documentation: https://github.com/bpucker/KIPEs
 					"""
 
 import os, glob, sys, time, re, math, subprocess, dendropy
@@ -40,9 +46,13 @@ from operator import itemgetter
 try:
 	from scipy import stats
 except:
-	sys.stdout.write(  "WARNING: scipy import failed. Analysis of co-expression will not be possible. Please ensure that scipy is installed.\n" )
+	sys.stdout.write(  "WARNING: scipy import failed. Analysis of co-expression will not be possible. Please ensure that scipy is installed to enable this option.\n" )
 	sys.stdout.flush()
-
+try:
+	import hashlib
+except ImportError:
+	sys.stdout.write(  "WARNING: hashlib import failed. Calculation of md5sums for inputs files not possible. Please install hashlib to improve the documentation quality.\n" )
+	sys.stdout.flush()
 
 # --- end of imports --- #
 
@@ -1694,6 +1704,88 @@ def automatic_coexp( expression_file, output_file, KIPEs_summary_file ):
 	construct_html_output( html_file, genes_per_function, function_order, coexp_per_gene )
 
 
+def md5_calculator( input_file ):
+	"""! @brief calculate md5sum of given file """
+	
+	if len( input_file ) > 0:
+		if os.path.isfile( input_file ):
+			with open( input_file, "rb" ) as f:
+				content = f.read()
+			try:
+				return hashlib.md5( content ).hexdigest()
+			except NameError:
+				return "n/a"
+		else:
+			return "n/a"
+	else:
+		return "n/a"
+
+
+def write_general_input_to_doc_file( fulldoc, bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff, exp_file, forester_state ):
+	"""! @brief write all input into the documentation file 
+		@note This function is based on the MYB_annotator: https://doi.org/10.1101/2021.10.16.464636
+	"""
+	
+	# --- KIPEs version and general info --- #
+	fulldoc.write( "Please cite 'Pucker, B.; Reiher, F.; Schilbert, H.M. Automatic Identification of Players in the Flavonoid Biosynthesis with Application on the Biomedicinal Plant Croton tiglium. Plants 2020, 9, 1103. https://doi.org/10.3390/plants9091103 Pucker, B.; Reiher, F.; Schilbert, H.M. Automatic Identification of Players in the Flavonoid Biosynthesis with Application on the Biomedicinal Plant Croton tiglium. Plants 2020, 9, 1103. https://doi.org/10.3390/plants9091103 ' when using KIPEs3.py.\n\n" )
+	fulldoc.write( "KIPEs3.py version: " + __version__ + "\n\n" )
+	
+	fulldoc.write( "This documentation file contains the input file names followed by their md5sums. Modification of the file content will result in a different md5sum. All settings are documented as well to enable reproduction.\n\n" )
+	
+	# --- bait sequences --- #
+	fasta_files = sorted( glob.glob( bait_seq_data_dir + "*.fa" ) + glob.glob( bait_seq_data_dir + "*.fasta" ) )
+	fulldoc.write( "bait sequence files:\n" )
+	for xfasta in fasta_files:
+		xfasta_md5 = md5_calculator( xfasta )
+		fulldoc.write( xfasta + "\t" + xfasta_md5 + "\n" )
+	fulldoc.write( "\n" )
+	
+	# --- output folder and input file --- #
+	fulldoc.write( "output folder: "+ output_dir +"\n" )
+	subject_md5 = md5_calculator( subject )
+	fulldoc.write( "subject file: " + subject + "\t" + subject_md5 + "\n" )
+	fulldoc.write( "input sequence type: " + seqtype + "\n" )
+	pathway_file_md5 = md5_calculator( pathway_file )
+	fulldoc.write( "pathway file (optional): " + pathway_file + "\t" + pathway_file_md5 + "\n" )
+	exp_file_md5 = md5_calculator( exp_file )
+	fulldoc.write( "expression file (optional): " + exp_file + "\t" + exp_file_md5 + "\n\n" )
+	
+	# --- residue information --- #
+	pos_data_files = sorted( glob.glob( pos_data_dir + "*.txt" ) + glob.glob( pos_data_dir + "*.res" ) )
+	fulldoc.write( "residue info files:\n" )
+	for xpos in pos_data_files:
+		xpos_md5 = md5_calculator( xpos )
+		fulldoc.write( xpos + "\t" + xpos_md5 + "\n" )
+	fulldoc.write( "\n" )
+	
+	# --- provided paths to tools --- #
+	fulldoc.write( "MAFFT path: " + mafft + " " )
+	try:
+		mafft_version_raw = subprocess.Popen( args=mafft + " --version", stderr=subprocess.PIPE, shell=True )
+		mafft_version = mafft_version_raw.stderr.read()
+		fulldoc.write ( "(" + str( mafft_version )[2:-3] + ")\n" )	#remove characters introduced through binary
+	except:
+		fulldoc.write ( "(version detection failed)\n" )	#if no MAFFT installation was detected
+	fulldoc.write( "BLASTp path: " + blastp + "\n" )
+	fulldoc.write( "tBLASTn path: " + tblastn + "\n" )
+	fulldoc.write( "makeblastdb path: " + makeblastdb + "\n" )
+	fulldoc.write( "FastTree2 path: " + fasttree + " (Please add version manually)\n\n" )
+	
+	# --- cutoffs and other settings --- #
+	fulldoc.write( "--cpus: " + str( cpus ) + "\n" )
+	fulldoc.write( "--scoreratio: " + str( score_ratio_cutoff ) + "\n" )
+	fulldoc.write( "--simcut: " + str( similarity_cutoff ) + "\n" )
+	fulldoc.write( "--genesize: " + str( max_gene_size ) + "\n" )
+	fulldoc.write( "--minsim: " + str( xsimcut ) + "\n" )
+	fulldoc.write( "--minres: " + str( xconsrescut ) + "\n" )
+	fulldoc.write( "--minreg: " + str( xconsregcut ) + "\n" )
+	fulldoc.write( "--possibilities: " + str( possibility_cutoff ) + "\n\n" )
+	
+	# --- options --- #
+	fulldoc.write( "check input completeness: " + str( checks ) + "\n" )
+	fulldoc.write( "construction of final gene trees: " + str( forester_state ) + "\n" )
+
+
 def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff, exp_file, forester_state ):
 	"""! @brief run whole KIPEs analysis for one subject sequence file """
 	
@@ -1726,138 +1818,144 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 	if not os.path.exists( output_dir ):
 		os.makedirs( output_dir )
 	
-	# --- prepare subject --- #
-	peptide_file = output_dir + "subject.fasta"
-	subject_name_file = output_dir + "subject_names.txt"
-	if seqtype == "pep":
-		sys.stdout.write( "INFO: Input sequences are peptides >> candidate detection can start directly.\n" )
-		sys.stdout.flush()
-		if not os.path.isfile( peptide_file ):
-			generate_subject_file( peptide_file, subject_name_file, subject )
-	elif seqtype == "rna":
-		sys.stdout.write( "INFO: Input sequences are DNA (transcripts expected) >> in silico translation will be performed in all 6 frames ...\n" )
-		sys.stdout.flush()
-		min_len_cutoff = 50	#minimal number of amino acids to keep a sequence as peptide
-		translate_to_generate_pep_file( peptide_file, subject_name_file, subject, min_len_cutoff )
+	# --- start documentation --- #
+	documentation_file = output_dir + "documentation_of_parameters_and_inputs.txt"
+	with open( documentation_file, "w" ) as fulldoc:
+		# --- generate basic documentation of input --- #
+		write_general_input_to_doc_file( fulldoc, bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff, exp_file, forester_state )
 	
-	
-	# --- prepare query files --- #
-	fasta_files = glob.glob( bait_seq_data_dir + "*.fa" ) + glob.glob( bait_seq_data_dir + "*.fasta" )
-	blast_query_dir = output_dir + "blast_query/"
-	if not os.path.exists( blast_query_dir ):
-		os.makedirs( blast_query_dir )
-	
-	query_file = output_dir + "QUERY.fasta"
-	name_mapping_table = output_dir + "NAME_MAPPING.txt"
-	if not os.path.isfile( query_file ):
-		with open( name_mapping_table, "w" ) as nmt:
-			query_files = []
-			for fasta in fasta_files:
-				qf = generate_query( fasta, blast_query_dir, nmt )
-				query_files.append( qf )
-		p = subprocess.Popen( args="cat " + " ".join( query_files ) + ' > ' + query_file, shell=True  )
-		p.communicate()
-	
-	# --- get subject peptide sequences if DNA is provided --- #
-	if seqtype == "dna":
-		dna_folder = output_dir + "DNA_screen/"
-		dna_screener( subject, peptide_file, subject_name_file, dna_folder, query_file, mafft, cpus, max_gene_size, makeblastdb, tblastn )
-	
-	
-	subject_name_mapping_table = load_subject_name_mapping_table( subject_name_file )
-	
-	# --- run BLAST searches --- #
-	blast_result_file = output_dir + "blast_results.txt"
-	blast_db = output_dir + "blastdb"
-	if not os.path.isfile( blast_result_file ):
-		p = subprocess.Popen( args= makeblastdb + " -in " + peptide_file + " -out " + blast_db + " -dbtype prot", shell=True )
-		p.communicate()
-		p = subprocess.Popen( args= blastp + " -query " + query_file + " -db " + blast_db + " -out " + blast_result_file + " -outfmt 6 -evalue 0.00001 -num_threads " + str( cpus ), shell=True )
-		p.communicate()
-	self_blast_result_file = output_dir + "self_blast_results.txt"
-	self_blast_db = output_dir + "self_blastdb"
-	if not os.path.isfile( self_blast_result_file ):
-		p = subprocess.Popen( args= makeblastdb + " -in " + query_file + " -out " + self_blast_db + " -dbtype prot", shell=True )
-		p.communicate()
-		p = subprocess.Popen( args= blastp + " -query " + query_file + " -db " + self_blast_db + " -out " + self_blast_result_file + " -outfmt 6 -evalue 0.00001 -num_threads " + str( cpus ), shell=True )
-		p.communicate()
-	
-	
-	# --- load sequence data --- #
-	peps = load_sequences( peptide_file )	#target peptide sequences
-	ref_seqs = load_ref_seqs( query_file, name_mapping_table )
-	
-	
-	# --- load BLAST results or classify based on phylogenetic tree --- #
-	self_scores = load_self_BLAST_hit_scores( self_blast_result_file )
-	
-	if len( fasttree ) > 1:
-		tree_tmp = output_dir + "tree_tmp/"
-		if not os.path.exists( tree_tmp ):
-			os.makedirs( tree_tmp )
-		blast_hits = tree_based_classification( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff,
-																		tree_tmp, fasttree, mafft, peps, ref_seqs, possibility_cutoff
-																		)
-	else:
-		blast_hits = load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff, possibility_cutoff )
-	
-	# --- analyse candidates in global alignments --- #
-	tmp_dir = output_dir + "tmp/"
-	if not os.path.exists( tmp_dir ):
-		os.makedirs( tmp_dir )
-	
-	alignment_per_candidate, sim_matrix_per_gene, candidates_by_gene = generate_global_alignments( mafft, peps, blast_hits, tmp_dir, ref_seqs )
-	sim_matrix_folder = output_dir + "similarity_matrix/"
-	if not os.path.exists( sim_matrix_folder ):
-		os.makedirs( sim_matrix_folder )
-	sim_per_pep = generate_sim_matrix_output_files( sim_matrix_folder, sim_matrix_per_gene, subject_name_mapping_table )
-	
-	
-	# --- check conserved residues in alignment --- #
-	if len( pos_data_dir ) > 1:
-		pos_data_files = glob.glob( pos_data_dir + "*.txt" ) + glob.glob( pos_data_dir + "*.res" )
-	else:
-		pos_data_files = []
-	pos_data_per_gene, regions_per_gene = load_pos_data_per_gene( pos_data_files )
-	cons_res_matrix_folder = output_dir + "conserved_residues/"
-	if not os.path.exists( cons_res_matrix_folder ):
-		os.makedirs( cons_res_matrix_folder )
-	cons_pos_per_pep, cons_pos_per_pep_extra = check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_candidate, candidates_by_gene, subject_name_mapping_table )
-	
-	
-	# --- check conserved regions in alignment --- #
-	cons_reg_matrix_folder = output_dir + "conserved_regions/"
-	if not os.path.exists( cons_reg_matrix_folder ):
-		os.makedirs( cons_reg_matrix_folder )
-	cons_reg_per_pep = check_cons_reg( cons_reg_matrix_folder, regions_per_gene, alignment_per_candidate, candidates_by_gene, subject_name_mapping_table )
-	
-	# --- generate final peptide files and summary file --- #
-	final_pep_folder = output_dir + "final_pep_files/"
-	if not os.path.exists( final_pep_folder ):
-		os.makedirs( final_pep_folder )
-	
-	summary_file = output_dir + "summary.txt"
-	summary, final_file_per_gene = generate_final_pep_files( peps, final_pep_folder, candidates_by_gene, xsimcut, xconsrescut, xconsregcut, sim_per_pep, cons_pos_per_pep, cons_reg_per_pep, summary_file, subject_name_mapping_table )
-	
-	# --- generate summary HTML --- #
-	html_file = output_dir + "SUMMARY.html"
-	
-	pathway = get_pathway( pathway_file, candidates_by_gene )
-	generate_summary_html( html_file, summary, peps, cons_pos_per_pep_extra, pathway, pos_data_per_gene )
-
-	#build phylogenetic tree with landmark sequences
-	if forester_state:
-		forester_output_folder = output_dir + "gene_trees/"
-		if len( fasttree ) == 0:
-			fasttree = "FastTree"
-		forester( final_pep_folder, forester_output_folder, bait_seq_data_dir, mafft, fasttree, occupancy=0.1 )
+		# --- prepare subject --- #
+		peptide_file = output_dir + "subject.fasta"
+		subject_name_file = output_dir + "subject_names.txt"
+		if seqtype == "pep":
+			sys.stdout.write( "INFO: Input sequences are peptides >> candidate detection can start directly.\n" )
+			sys.stdout.flush()
+			if not os.path.isfile( peptide_file ):
+				generate_subject_file( peptide_file, subject_name_file, subject )
+		elif seqtype == "rna":
+			sys.stdout.write( "INFO: Input sequences are DNA (transcripts expected) >> in silico translation will be performed in all 6 frames ...\n" )
+			sys.stdout.flush()
+			min_len_cutoff = 50	#minimal number of amino acids to keep a sequence as peptide
+			translate_to_generate_pep_file( peptide_file, subject_name_file, subject, min_len_cutoff )
 		
-	if len( exp_file ) > 0:
-		coexp_output_folder = output_dir + "coexpression/"
-		if not os.path.exists( coexp_output_folder ):
-			os.makedirs( coexp_output_folder )
-		output_file = coexp_output_folder + "coexp_summary.txt"
-		automatic_coexp( exp_file, output_file, summary_file )
+		
+		# --- prepare query files --- #
+		fasta_files = glob.glob( bait_seq_data_dir + "*.fa" ) + glob.glob( bait_seq_data_dir + "*.fasta" )
+		blast_query_dir = output_dir + "blast_query/"
+		if not os.path.exists( blast_query_dir ):
+			os.makedirs( blast_query_dir )
+		
+		query_file = output_dir + "QUERY.fasta"
+		name_mapping_table = output_dir + "NAME_MAPPING.txt"
+		if not os.path.isfile( query_file ):
+			with open( name_mapping_table, "w" ) as nmt:
+				query_files = []
+				for fasta in fasta_files:
+					qf = generate_query( fasta, blast_query_dir, nmt )
+					query_files.append( qf )
+			p = subprocess.Popen( args="cat " + " ".join( query_files ) + ' > ' + query_file, shell=True  )
+			p.communicate()
+		
+		# --- get subject peptide sequences if DNA is provided --- #
+		if seqtype == "dna":
+			dna_folder = output_dir + "DNA_screen/"
+			dna_screener( subject, peptide_file, subject_name_file, dna_folder, query_file, mafft, cpus, max_gene_size, makeblastdb, tblastn )
+		
+		
+		subject_name_mapping_table = load_subject_name_mapping_table( subject_name_file )
+		
+		# --- run BLAST searches --- #
+		blast_result_file = output_dir + "blast_results.txt"
+		blast_db = output_dir + "blastdb"
+		if not os.path.isfile( blast_result_file ):
+			p = subprocess.Popen( args= makeblastdb + " -in " + peptide_file + " -out " + blast_db + " -dbtype prot", shell=True )
+			p.communicate()
+			p = subprocess.Popen( args= blastp + " -query " + query_file + " -db " + blast_db + " -out " + blast_result_file + " -outfmt 6 -evalue 0.00001 -num_threads " + str( cpus ), shell=True )
+			p.communicate()
+		self_blast_result_file = output_dir + "self_blast_results.txt"
+		self_blast_db = output_dir + "self_blastdb"
+		if not os.path.isfile( self_blast_result_file ):
+			p = subprocess.Popen( args= makeblastdb + " -in " + query_file + " -out " + self_blast_db + " -dbtype prot", shell=True )
+			p.communicate()
+			p = subprocess.Popen( args= blastp + " -query " + query_file + " -db " + self_blast_db + " -out " + self_blast_result_file + " -outfmt 6 -evalue 0.00001 -num_threads " + str( cpus ), shell=True )
+			p.communicate()
+		
+		
+		# --- load sequence data --- #
+		peps = load_sequences( peptide_file )	#target peptide sequences
+		ref_seqs = load_ref_seqs( query_file, name_mapping_table )
+		
+		
+		# --- load BLAST results or classify based on phylogenetic tree --- #
+		self_scores = load_self_BLAST_hit_scores( self_blast_result_file )
+		
+		if len( fasttree ) > 1:
+			tree_tmp = output_dir + "tree_tmp/"
+			if not os.path.exists( tree_tmp ):
+				os.makedirs( tree_tmp )
+			blast_hits = tree_based_classification( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff,
+																			tree_tmp, fasttree, mafft, peps, ref_seqs, possibility_cutoff
+																			)
+		else:
+			blast_hits = load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff, possibility_cutoff )
+		
+		# --- analyse candidates in global alignments --- #
+		tmp_dir = output_dir + "tmp/"
+		if not os.path.exists( tmp_dir ):
+			os.makedirs( tmp_dir )
+		
+		alignment_per_candidate, sim_matrix_per_gene, candidates_by_gene = generate_global_alignments( mafft, peps, blast_hits, tmp_dir, ref_seqs )
+		sim_matrix_folder = output_dir + "similarity_matrix/"
+		if not os.path.exists( sim_matrix_folder ):
+			os.makedirs( sim_matrix_folder )
+		sim_per_pep = generate_sim_matrix_output_files( sim_matrix_folder, sim_matrix_per_gene, subject_name_mapping_table )
+		
+		
+		# --- check conserved residues in alignment --- #
+		if len( pos_data_dir ) > 1:
+			pos_data_files = glob.glob( pos_data_dir + "*.txt" ) + glob.glob( pos_data_dir + "*.res" )
+		else:
+			pos_data_files = []
+		pos_data_per_gene, regions_per_gene = load_pos_data_per_gene( pos_data_files )
+		cons_res_matrix_folder = output_dir + "conserved_residues/"
+		if not os.path.exists( cons_res_matrix_folder ):
+			os.makedirs( cons_res_matrix_folder )
+		cons_pos_per_pep, cons_pos_per_pep_extra = check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_candidate, candidates_by_gene, subject_name_mapping_table )
+		
+		
+		# --- check conserved regions in alignment --- #
+		cons_reg_matrix_folder = output_dir + "conserved_regions/"
+		if not os.path.exists( cons_reg_matrix_folder ):
+			os.makedirs( cons_reg_matrix_folder )
+		cons_reg_per_pep = check_cons_reg( cons_reg_matrix_folder, regions_per_gene, alignment_per_candidate, candidates_by_gene, subject_name_mapping_table )
+		
+		# --- generate final peptide files and summary file --- #
+		final_pep_folder = output_dir + "final_pep_files/"
+		if not os.path.exists( final_pep_folder ):
+			os.makedirs( final_pep_folder )
+		
+		summary_file = output_dir + "summary.txt"
+		summary, final_file_per_gene = generate_final_pep_files( peps, final_pep_folder, candidates_by_gene, xsimcut, xconsrescut, xconsregcut, sim_per_pep, cons_pos_per_pep, cons_reg_per_pep, summary_file, subject_name_mapping_table )
+		
+		# --- generate summary HTML --- #
+		html_file = output_dir + "SUMMARY.html"
+		
+		pathway = get_pathway( pathway_file, candidates_by_gene )
+		generate_summary_html( html_file, summary, peps, cons_pos_per_pep_extra, pathway, pos_data_per_gene )
+
+		#build phylogenetic tree with landmark sequences
+		if forester_state:
+			forester_output_folder = output_dir + "gene_trees/"
+			if len( fasttree ) == 0:
+				fasttree = "FastTree"
+			forester( final_pep_folder, forester_output_folder, bait_seq_data_dir, mafft, fasttree, occupancy=0.1 )
+			
+		if len( exp_file ) > 0:
+			coexp_output_folder = output_dir + "coexpression/"
+			if not os.path.exists( coexp_output_folder ):
+				os.makedirs( coexp_output_folder )
+			output_file = coexp_output_folder + "coexp_summary.txt"
+			automatic_coexp( exp_file, output_file, summary_file )
 
 
 def main( arguments ):
