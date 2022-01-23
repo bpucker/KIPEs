@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-__version__ = "v0.31"	#converted to Python3
+__version__ = "v0.32"	#converted to Python3
 
 __reference__ = "Pucker et al., 2020: https://doi.org/10.3390/plants9091103"
 
@@ -537,11 +537,19 @@ def check_cons_res( cons_res_matrix_folder, pos_data_per_gene, alignment_per_can
 					results, extra_results = check_alignment_for_cons_res( can_aln, ref_aln, residues )
 					out.write( "\t".join( map( str, [ subject_name_mapping_table[ candidate ] ] + results  ) ) + '\n' )
 					try:
-						cons_pos_per_pep[ candidate ].update( { gene: 100.0* results.count( True ) / len( results ) } )
-						cons_pos_per_pep_extra[ candidate ].update( { gene: extra_results } )
+						if len( results ) > 0:
+							cons_pos_per_pep[ candidate ].update( { gene: 100.0* results.count( True ) / len( results ) } )
+							cons_pos_per_pep_extra[ candidate ].update( { gene: extra_results } )
+						else:
+							cons_pos_per_pep[ candidate ].update( { gene: 0.0 } )
+							cons_pos_per_pep_extra[ candidate ].update( { gene: extra_results } )
 					except KeyError:
-						cons_pos_per_pep.update( { candidate: { gene: 100.0* results.count( True ) / len( results ) } } )
-						cons_pos_per_pep_extra.update( { candidate: { gene: extra_results } } )
+						if len( results ) > 0:
+							cons_pos_per_pep.update( { candidate: { gene: 100.0* results.count( True ) / len( results ) } } )
+							cons_pos_per_pep_extra.update( { candidate: { gene: extra_results } } )
+						else:
+							cons_pos_per_pep.update( { candidate: { gene: 0.0 } } )
+							cons_pos_per_pep_extra.update( { candidate: { gene: extra_results } } )
 		except KeyError:
 			sys.stdout.write( "ERROR: no information (conserved residues) available about gene: " + gene + "\n" )
 			sys.stdout.flush()
@@ -1958,6 +1966,21 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 			automatic_coexp( exp_file, output_file, summary_file )
 
 
+def seqtype_check( sequences ):
+	"""! @brief checking the type of provided input sequences """
+	
+	sequences = list( sequences.values() )
+	one_seq_string = "".join( sequences[:min( [ len(sequences), 100 ] )] ).upper()
+	acgtn = one_seq_string.count( "A" ) + one_seq_string.count( "C" ) + one_seq_string.count( "G" ) + one_seq_string.count( "T" ) + one_seq_string.count( "N" )
+	if len( one_seq_string ) > 0:
+		if float( acgtn ) / len( one_seq_string ) > 0.9:
+			return "rna"
+		else:
+			return "pep"
+	else:
+		return "pep"
+
+
 def main( arguments ):
 	"""! @brief run everything """
 	
@@ -2104,6 +2127,16 @@ def main( arguments ):
 	sys.stdout.write( "number of subjects to process: " + str( len( subjects ) ) + "\n" )
 	sys.stdout.flush()
 	for xxx, subject in enumerate( subjects ):
+		# --- check seqtype --- #
+		if seqtype == "pep":
+			if os.path.isfile( subject ):
+				sequences =  load_sequences( subject )
+				real_seqtype = seqtype_check( sequences )
+				if real_seqtype != "pep":
+					sys.stdout.write( "WARNING: PROVIDED SEQUENCES APPEAR TO BE NUCLEOTIDES NOT POLYPPEPTIDES! Please reconsider your --seqtype settings. \n" )
+					sys.stdout.flush()
+		
+		# --- start KIPEs --- #
 		KIPEs( 	bait_seq_data_dir, output_dirs[ xxx ], subject, pos_data_dir, seqtype,
 					mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file,
 					cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size,
