@@ -140,7 +140,7 @@ Domains: The domain entry indicator (D) is followed by the name of the domain in
 `--pathway` can be used to provide the order of all steps in the pathway as a text file. One enzyme/gene name needs to be given per line and the names need to match the names of provided data files (bait sequence and residue/domain info files) excactly.If no information about the pathway genes/enzymes is provided, results will be sorted in alphabetical order. Enzyme/gene names missing from the pathway file will be appended to the provided list to avoid the loss of results.
 
 
-`--possibilities` specifies the number of different enzyme functions that are considered per sequence. This argument is relevant if looking for multiple different enzymes with high overall sequence similarity e.g. CHS/STS or F3H/FLS/LDOX. One sequence can be checked for the relevant amino acid residues of each of these enzymes to allow a high fidelity classification.
+`--possibilities` specifies the number of different enzyme functions that are considered per sequence. This argument is relevant if looking for multiple different enzymes with high overall sequence similarity e.g. CHS/STS or F3H/FLS/ANS(LDOX). One sequence can be checked for the relevant amino acid residues of each of these enzymes to allow a high fidelity classification.
 
 
 
@@ -206,7 +206,7 @@ Arguments:
 
 ## Limitations and outlook
 
-As this tool is an automatic identification pipeline for candidate genes, the resolution of this analysis might be inferior to a manual annotation in certain cases like ODDs (F3H, FLS, LDOX). Therefore, it is recommended to carefully inspect the results from this pipeline. Generally, the quality of results is depending on the input quality. This pipeline was developed for the annotation of genes in the flavonoid biosynthesis of plants, but could be applied to other pathways if sufficient information is available.
+As this tool is an automatic identification pipeline for candidate genes, the resolution of this analysis might be inferior to a manual annotation in certain cases like ODDs (F3H, FLS, ANS/LDOX). Therefore, it is recommended to carefully inspect the results from this pipeline. Generally, the quality of results is depending on the input quality. This pipeline was developed for the annotation of genes in the flavonoid biosynthesis of plants, but could be applied to other pathways if sufficient information is available.
 
 
 ### Automatic construction of gene trees ###
