@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-__version__ = "v0.32"	#converted to Python3
+__version__ = "v0.33"	#converted to Python3
 
 __reference__ = "Pucker et al., 2020: https://doi.org/10.3390/plants9091103"
 
@@ -1826,6 +1826,20 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 	if not os.path.exists( output_dir ):
 		os.makedirs( output_dir )
 	
+	if subject[-3:] in [ ".gz", ".GZ" ]:	#KIPEs3 can handle gzip compressed input files (subject only!)
+		try:
+			p = subprocess.Popen( args="cp " + subject + " " + output_dir, shell=True  )
+			p.communicate()
+			if "/" in subject:
+				subject = output_dir + subject.split('/')[-1]
+			else:
+				subject = output_dir + subject
+			p = subprocess.Popen( args="gunzip " + subject, shell=True  )
+			p.communicate()
+		except:
+			sys.exit( "ERROR: subject file appears to be compressed, but gzip is not available." )
+		subject = subject[:-3]
+	
 	# --- start documentation --- #
 	documentation_file = output_dir + "documentation_of_parameters_and_inputs.txt"
 	with open( documentation_file, "w" ) as fulldoc:
@@ -1988,7 +2002,9 @@ def main( arguments ):
 	
 	if '--subjectdir' in arguments:
 		subject_dir = arguments[ arguments.index('--subjectdir')+1 ]
-		subjects = glob.glob( subject_dir + "*.faa" ) + glob.glob( subject_dir + "*.fa" ) + glob.glob( subject_dir + "*.fasta" )
+		subjects = []
+		for ext in [ "*.faa", "*.fa", "*.fasta", "*.faa.gz", "*.fa.gz", "*.fasta.gz", "*.FAA", "*.FA", "*.FASTA", "*.FAA.GZ", "*.FA.GZ", "*.FASTA.GZ" ]:
+			subjects += glob.glob( subject_dir + ext )
 		output_dir = arguments[ arguments.index('--out')+1 ]
 		if output_dir[-1] != '/':
 			output_dir += "/"
