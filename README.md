@@ -353,4 +353,4 @@ dendropy: https://dendropy.org/ and https://doi.org/10.1093/bioinformatics/btq22
 
 When using KIPEs in your research, please cite:
 
-Automatic identification of players in the flavonoid biosynthesis with application on the biomedicinal plant Croton tiglium. Boas Pucker, Franziska Reiher, Hanna Marie Schilbert. Plants 2020, 9, 1103. doi:[10.3390/plants9091103](https://doi.org/10.3390/plants9091103).
+Automatic identification of players in the flavonoid biosynthesis with application on the biomedicinal plant _Croton tiglium_. Boas Pucker, Franziska Reiher, Hanna Marie Schilbert. Plants 2020, 9, 1103. doi:[10.3390/plants9091103](https://doi.org/10.3390/plants9091103).
