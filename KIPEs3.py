@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### bpucker@cebitec.uni-bielefeld.de ###
-__version__ = "v0.33"	#converted to Python3
+__version__ = "v0.34"	#converted to Python3
 
 __reference__ = "Pucker et al., 2020: https://doi.org/10.3390/plants9091103"
 
@@ -594,12 +594,12 @@ def check_cons_reg( cons_reg_matrix_folder, regions_per_gene, alignment_per_cand
 					out.write( "\t".join( map( str, [ subject_name_mapping_table[ candidate ] ] + results  ) ) + '\n' )
 					try:
 						try:
-							cons_reg_per_pep[ candidate ].update( { gene: 100.0*sum( results ) / len( results ) } )
+							cons_reg_per_pep[ candidate ].update( { gene: sum( results ) / len( results ) } )
 						except ZeroDivisionError:
 							cons_reg_per_pep[ candidate ].update( { gene: 0.0 } )
 					except KeyError:
 						try:
-							cons_reg_per_pep.update( { candidate: { gene: 100.0*sum( results ) / len( results ) } } )
+							cons_reg_per_pep.update( { candidate: { gene: sum( results ) / len( results ) } } )
 						except ZeroDivisionError:
 							cons_reg_per_pep.update( { candidate: { gene: 0.0 } } )
 		except KeyError:
@@ -1281,7 +1281,7 @@ def generate_final_pep_files( 	peps, final_pep_folder, candidates_by_gene,
 																						gene + "_" + str( y+1 ),
 																						candidate['sim'],
 																						candidate['res'],
-																						candidate['reg']																						
+																						candidate['reg']
 																					] ) ) + '\n' )
 	return complete_summary, final_file_per_gene
 
