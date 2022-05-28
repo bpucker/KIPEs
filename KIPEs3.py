@@ -1,6 +1,6 @@
 ### Boas Pucker ###
-### bpucker@cebitec.uni-bielefeld.de ###
-__version__ = "v0.34"	#converted to Python3
+### b.pucker@tu-braunschweig.de ###
+__version__ = "v0.35"	#converted to Python3
 
 __reference__ = "Pucker et al., 2020: https://doi.org/10.3390/plants9091103"
 
@@ -8,7 +8,7 @@ __usage__ = """
 					KIPEs """ + __version__ + """("""+ __reference__ +""")
 					
 					Usage:
-					python KIPEs3.py
+					python3 KIPEs3.py
 					--baits <FOLDER_WITH_BAIT_SEQ_FILES>
 					--positions <FOLDER_WITH_POSITION_FILES>|--residues
 					--out <OUTPUT_DIR>
@@ -37,7 +37,7 @@ __usage__ = """
 					--forester <ACTIVATES_GENE_TREE_CONSTRUCTION>[off]
 					--exp <GENE_EXPRESSION_FILE_ACTIVATES_COEXPRESSION_ANALYSIS>[off]
 					
-					bug reports and feature requests: bpucker@cebitec.uni-bielefeld.de
+					bug reports and feature requests: b.pucker@tu-braunschweig.de
 					Complete documentation: https://github.com/bpucker/KIPEs
 					"""
 
