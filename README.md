@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/255121677.svg)](https://zenodo.org/badge/latestdoi/255121677)
+
 # KIPEs (Knowledge-based Identification of Pathway Enzymes)
 
 ### KIPEs is available on our [webserver](http://pbb.bot.nat.tu-bs.de/KIPEs/) ###
