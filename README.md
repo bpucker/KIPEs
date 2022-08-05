@@ -49,6 +49,24 @@ The output format of this analysis of conserved regions matches the output forma
 
 
 
+## Installation
+
+While some dependencies are required, this tool does not require an installation. Downloading and executing the script on a Linux system is sufficient. There is currently no support for other operating systems. Most required modules are included in the initial Python installation, but dendropy might not be available on all systems. 
+
+[Python3](https://www.python.org/) (```sudo apt-get install python3.8```). It is also possible to use other Python3 versions.
+
+[dendropy](https://dendropy.readthedocs.io/en/main/) (```sudo apt install python3-pip && python3 -m pip install git+https://github.com/jeetsukumaran/DendroPy.git```)
+
+[MAFFT](https://mafft.cbrc.jp/alignment/software/linuxportable.html) (```sudo apt-get install -y mafft```)
+
+[BLAST](https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/) (```sudo apt-get install ncbi-blast+```) or [HMMER](http://hmmer.org/documentation.html)(```conda install -c bioconda hmmer```)
+
+[FastTree](http://www.microbesonline.org/fasttree/#Install) (```sudo apt-get install -y fasttree```) and/or [RAxML-NG](https://github.com/amkozlov/raxml-ng) (precompiled binaries recommended)
+
+
+
+
+
 ## Usage
 
 ### General recommendation
