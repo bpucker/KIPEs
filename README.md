@@ -276,7 +276,7 @@ When running KIPEs on a large number of data sets, it can be helpful to collect 
 
 ```
 Usage:
-  python3 collect_KIPEs_results.py --in <DIR> --out <DIR> --ref <DIR>
+  python3 collect_KIPEs_results.py --in <DIR> --out <DIR> --genes <STR>
  
 Mandatory:
   --in          STR    Directory with KIPEs result folders
@@ -294,7 +294,7 @@ Mandatory:
 
 `--out` is the full path to the output file that will contain the summarized information about the best candidates in all analyzed species.
 
-`--genes` is a list of all gene names that should be listed in the final resul table. The names of genes are comma-separated e.g. "CHS,CHI1,F3H".
+`--genes` is a list of all gene names that should be listed in the final result table. The names of genes are comma-separated e.g. "CHS,CHI1,F3H".
 
 `--mapping` is the full path to a table that contains the name of folders in the directory provided via `--in` in the first column and the corresponding species name in the second column.
 
