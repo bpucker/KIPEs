@@ -116,7 +116,7 @@ Mandatory:
   
   --fasttree       STR    Full path to the FastTree binary
   
-  --forester       STR    Activates the automatic construction of gene trees (on|off)[on]
+  --forester       STR    Activates the automatic construction of gene trees (on|off)[off]
   --exp            STR    Gene expression file (activates heatmap construction)
 ```
 
