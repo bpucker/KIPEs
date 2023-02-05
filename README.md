@@ -184,11 +184,11 @@ Domains: The domain entry indicator (D) is followed by the name of the domain in
 
 `--exp` specifies gene expression file. The first column contains the gene IDs which need to match the sequence IDs of the dataset analyzed by KIPEs. The first row contains the names of samples. Providing a gene expression file activates the construction of a co-expression heatmap with all candidate genes. Default: off.
 
-`--rcut` specifies the minimal correlation cutoff value. Only genes with at least this strength of correlation are reported.
+`--rcut` specifies the minimal correlation cutoff value. Only genes with at least this strength of correlation are reported. Default: 0.3.
 
-`--pcut` specifies the maximal p-value cutoff. Only genes with a correlation that has a lower p-value are reported.
+`--pcut` specifies the maximal p-value cutoff. Only genes with a correlation that has a lower p-value are reported. Default: 0.05.
 
-`--minexp` specifies the minimal expression per gene (across all samples) that is required for a gene to be considered in the co-expression analysis.
+`--minexp` specifies the minimal expression per gene (across all samples) that is required for a gene to be considered in the co-expression analysis. Default: 30.
   
 
 ### Generating tables of conserved residues
