@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### b.pucker@tu-braunschweig.de ###
-__version__ = "v3.2.0"	#converted to Python3
+__version__ = "v3.2.1"	#converted to Python3
 
 __reference__ = "Pucker et al., 2020: https://doi.org/10.3390/plants9091103 and Rempel&Pucker, 2023: https://doi.org/10.1101/2022.06.30.498365"
 
@@ -1840,6 +1840,78 @@ def write_general_input_to_doc_file( fulldoc, bait_seq_data_dir, output_dir, sub
 	fulldoc.write( "construction of final gene trees: " + str( forester_state ) + "\n" )
 
 
+def load_genes_from_summary_file( genes_of_interest, kipes_summary_file ):
+	"""! @brief load all relevant genes from summary file """
+	
+	important_genes = {}
+	with open( kipes_summary_file, "r" ) as f:
+		f.readline()	#remove header
+		line = f.readline()
+		while line:
+			parts = line.strip().split('\t')
+			gene = parts[1].split('_')[0]	#this is the pathway step (running number needs to be removed)
+			if gene in genes_of_interest:
+				try:
+					important_genes[ gene ]
+					if float( parts[3] ) > 95.0:	#only take almost perfect hits
+						important_genes[ gene ].append( parts[0] )
+				except KeyError:
+					important_genes.update( { gene: [ parts[0] ] } )	#take at least the best candidate
+			line = f.readline()
+	return important_genes
+
+
+def load_coexp_per_candidate_gene( single_gene_exp_folder, all_genes ):
+	"""! @brief load co-expression values per candidate gene against all other candidate genes """
+	
+	coexp = {}
+	for gene in all_genes:
+		filename = single_gene_exp_folder + gene + ".txt"
+		print( filename )
+		if os.path.isfile( filename ):
+			
+			with open( filename, "r" ) as f:
+				line = f.readline()
+				while line:
+					parts = line.strip().split('\t')
+					if parts[1] in all_genes:
+						try:
+							coexp[ parts[1] ]	#avoid including both directions of co-expression
+						except KeyError:
+							try:
+								coexp[ parts[0] ].update( { parts[1]: float( parts[2] ) } )
+							except KeyError:
+								coexp.update( { parts[0]: { parts[1]: float( parts[2] ) } } )
+					line = f.readline()
+	return coexp
+
+
+def cytoscape_input_constructor( kipes_summary_file, single_gene_exp_folder, cytoscape_output_file, genes_of_interest ):
+	"""! @brief run everything """
+	
+	#genes_of_interest = [ "CHS", "CHI1", "F3H", "F3-H", "FLS", "DFR", "ANS" ]
+	
+	# load all candiates per step in the pathway; dictionary with pathway position as key and gene IDs in a list as value
+	genes = load_genes_from_summary_file( genes_of_interest, kipes_summary_file )
+	
+	all_genes = [ g for gene in genes.values() for g in gene ]	#get a flat list of all candidate gene IDs
+	
+	coexp = load_coexp_per_candidate_gene( single_gene_exp_folder, all_genes )
+	
+	with open( cytoscape_output_file, "w" ) as out:
+		functions = sorted( list( genes.keys() ) )	#these are steps in the pathway (e.g. CHS, CHI, ...)
+		for idx1, gene1 in enumerate( functions ):	#gene1 is one step in the pathway (e.g. CHS)
+			for candidate1 in genes[ gene1 ]:	#candidates are individual candidate gene IDs
+				for idx2, gene2 in enumerate( functions ):	#gene2 is one step in the pathway (e.g. CHI)
+					if idx2 > idx1:	#this avoids to have redundant lines
+						for candidate2 in genes[ gene2 ]:
+							try:
+								new_line = [ candidate1 + "(" + gene1 + ")", candidate2 + "(" + gene2 + ")", str( coexp[ candidate1 ][ candidate2 ] ) ]	#suitable for visualizing co-expression on edges
+								out.write( "\t".join( new_line ) + "\n" )
+							except KeyError:
+								pass
+
+
 def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, treemethod, fasttree, iqtree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff, exp_file, forester_state, rcutoff, pcutoff, minexpression ):
 	"""! @brief run whole KIPEs analysis for one subject sequence file """
 	
@@ -2025,6 +2097,9 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 				os.makedirs( coexp_output_folder )
 			output_file = coexp_output_folder + "coexp_summary.txt"
 			automatic_coexp( exp_file, output_file, summary_file, coexp_output_folder, rcutoff, pcutoff, minexpression )
+			single_gene_exp_folder = coexp_output_folder + "individual_genes/"
+			cytoscape_output_file = coexp_output_folder + "coexpression_network.cytoscape.txt"
+			cytoscape_input_constructor( summary_file, single_gene_exp_folder, cytoscape_output_file, pathway )
 
 
 def seqtype_check( sequences ):
