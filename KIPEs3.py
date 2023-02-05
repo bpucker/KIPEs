@@ -1,8 +1,8 @@
 ### Boas Pucker ###
 ### b.pucker@tu-braunschweig.de ###
-__version__ = "v0.35"	#converted to Python3
+__version__ = "v3.2.0"	#converted to Python3
 
-__reference__ = "Pucker et al., 2020: https://doi.org/10.3390/plants9091103"
+__reference__ = "Pucker et al., 2020: https://doi.org/10.3390/plants9091103 and Rempel&Pucker, 2023: https://doi.org/10.1101/2022.06.30.498365"
 
 __usage__ = """
 					KIPEs """ + __version__ + """("""+ __reference__ +""")
@@ -33,11 +33,16 @@ __usage__ = """
 					--makeblastdb <PATH_TO_AND_INCLUDING_BINARY>[makeblastdb]
 					
 					--fasttree <PATH_TO_FASTTREE>(recommended for tree building)
+					--iqtree <PATH_TO_IQ-TREE>
 					
 					--forester <ACTIVATES_GENE_TREE_CONSTRUCTION>[off]
-					--exp <GENE_EXPRESSION_FILE_ACTIVATES_COEXPRESSION_ANALYSIS>[off]
 					
-					bug reports and feature requests: b.pucker@tu-braunschweig.de
+					--exp <GENE_EXPRESSION_FILE_ACTIVATES_COEXPRESSION_ANALYSIS>[off]
+					--rcut <CORRELATION_CUTOFF>[0.3]
+					--pcut <P_VALUE_CUTOFF>[0.05]
+					--minexp <MIN_EXP_PER_GENE>[30]
+					
+					bug reports and feature requests: b.pucker@tu-bs.de
 					Complete documentation: https://github.com/bpucker/KIPEs
 					"""
 
@@ -193,7 +198,7 @@ def alignment_trimming( aln_file, cln_aln_file, occupancy ):
 			out.write( "" )
 
 
-def tree_based_classification( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff, tree_tmp, fasttree, mafft, peps, ref_seqs, possibility_cutoff ):
+def tree_based_classification( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff, tree_tmp, treemethod, fasttree, iqtree, mafft, peps, ref_seqs, possibility_cutoff ):
 	"""! @brief load BLAST results """
 	
 	final_results = {}
@@ -240,9 +245,17 @@ def tree_based_classification( blast_result_file, self_scores, score_ratio_cutof
 			occupancy = 0.3	#could be implemented as option later
 			alignment_trimming( aln_file, cln_aln_file, occupancy )
 			
+			
 			tree_file = cln_aln_file + ".tree"
-			p = subprocess.Popen( args= " ".join( [ fasttree, "-wag -nosupport <", cln_aln_file, ">", tree_file, "2>", tree_file+".err" ] ), shell=True )
-			p.communicate()
+			if treemethod == "fasttree":	#construct tree with FastTree2
+				p = subprocess.Popen( args= " ".join( [ fasttree, "-wag -nosupport <", cln_aln_file, ">", tree_file, "2>", tree_file+".err" ] ), shell=True )
+				p.communicate()
+			elif treemethod == "iqtree":	#construct tree with IQ-TREE
+				tmp_tree_file = cln_aln_file + ".treefile"	#".treefile" is appended to provided alignment file name
+				p = subprocess.Popen( args= iqtree + " -nt 1 -s " + cln_aln_file, shell=True )	#bootstrapping: -alrt 1000 -bb 1000
+				p.communicate()
+				p = subprocess.Popen( args= "mv " + tmp_tree_file + " " + tree_file, shell=True )
+				p.communicate()
 			
 			# --- find reference seqs sister --- #
 			sisters = find_sisters_in_tree( tree_file, all_seq_IDs_in_tree )
@@ -1317,18 +1330,16 @@ def which( cmd, mode=os.F_OK, path=None ):
 	return None
 
 
-def validate_input( pos_data_dir, bait_seq_data_dir, makeblastdb, blastp, tblastn, mafft, fasttree ):
+def validate_input( pos_data_dir, bait_seq_data_dir, makeblastdb, blastp, tblastn, mafft, treemethod, fasttree, iqtree ):
 	"""! @brief validate input """
 	
 	### tool dependency checks ###
 	tool_labels = [ "makeblastdb", "blastp", "tblastn", "mafft", "fasttree" ]
 	tool_state = True
-	for t, each_tool in enumerate( [ makeblastdb, blastp, tblastn, mafft, fasttree ] ):
+	for t, each_tool in enumerate( [ makeblastdb, blastp, tblastn, mafft, fasttree, iqtree ] ):
 		each_tool_state = which( each_tool )
 		if each_tool_state == None:
-			if t == 4 and len( fasttree ) == 0:
-				pass
-			else:
+			if len( each_tool ) > 0:
 				sys.stdout.write("ERROR: specified binary of " + tool_labels[ t ] + " not detected - " + each_tool + "\n")
 				sys.stdout.flush()
 				tool_state = False
@@ -1502,7 +1513,7 @@ def modify_names_in_tree( input_tree_file, output_tree_file, mapping_table_file 
 		out.write( tree )
 
 
-def construct_tree( input_file,  output_dir, mafft, fasttree, occupancy, name ):
+def construct_tree( input_file,  output_dir, mafft, treemethod, fasttree, iqtree, occupancy, name ):
 	"""! @brief handle tree construction """
 		
 	if output_dir[-1] != '/':
@@ -1523,8 +1534,18 @@ def construct_tree( input_file,  output_dir, mafft, fasttree, occupancy, name ):
 	alignment_trimming( alignment_file, clean_alignment_file, occupancy )
 	
 	tree_file = clean_alignment_file + ".tre"
-	p = subprocess.Popen( args= " ".join( [ fasttree, "-wag -nosupport <", clean_alignment_file, ">", tree_file, "2>", tree_file+".log" ] ), shell=True )
-	p.communicate()
+	if treemethod == "fasttree":		#construct tree with FastTree
+		p = subprocess.Popen( args= " ".join( [ fasttree, "-wag -nosupport <", clean_alignment_file, ">", tree_file, "2>", tree_file+".log" ] ), shell=True )
+		p.communicate()
+	elif treemethod == "iqtree":	#construct tree with IQ-TREE
+		tmp_tree_file = clean_alignment_file + ".treefile"	#".treefile" is appended to provided alignment file name
+		p = subprocess.Popen( args= iqtree + " -nt 1 -alrt 1000 -bb 1000 -s " + clean_alignment_file, shell=True )
+		p.communicate()
+		if not os.path.isfile( tmp_tree_file ):	#run analysis without bootstrapping if there are not enough sequences
+			p = subprocess.Popen( args= iqtree + " -nt 1 -s " + clean_alignment_file, shell=True )	#bootstrapping: -alrt 1000 -bb 1000 
+			p.communicate()
+		p = subprocess.Popen( args= "mv " + tmp_tree_file + " " + tree_file, shell=True )
+		p.communicate()
 	
 	output_tree_file = output_dir + name + "FINAL_TREE.tre"
 	modify_names_in_tree( tree_file, output_tree_file, mapping_table_file )
@@ -1532,7 +1553,7 @@ def construct_tree( input_file,  output_dir, mafft, fasttree, occupancy, name ):
 	return output_tree_file
 
 
-def forester( input_folder, output_folder, refseq_folder, mafft, fasttree, occupancy ):
+def forester( input_folder, output_folder, refseq_folder, mafft, treemethod, fasttree, iqtree, occupancy ):
 	"""! @brief run everything """
 	
 	clean = False	#temporary files are stored
@@ -1553,7 +1574,7 @@ def forester( input_folder, output_folder, refseq_folder, mafft, fasttree, occup
 			p.communicate()
 			tree_tmp_folder = output_folder + ID + "_tmp/"
 
-			tree = construct_tree( tree_input_file, tree_tmp_folder, mafft, fasttree, occupancy, ID )
+			tree = construct_tree( tree_input_file, tree_tmp_folder, mafft, treemethod, fasttree, iqtree, occupancy, ID )
 			
 			p = subprocess.Popen( args= "cp " + tree + " " + output_folder + ID + ".tre", shell=True )
 			p.communicate()
@@ -1582,11 +1603,12 @@ def load_expression_values( filename ):
 	return expression_data
 
 
-def one_vs_all_coexp( candidate, candidate_genes, gene_expression ):
+def one_vs_all_coexp( candidate, candidate_genes, gene_expression, single_coexp_output_file, rcutoff, pcutoff, minexpression ):
 	"""! @brief compare candidate gene expression against all genes to find co-expressed genes """
 	
 	tissues = sorted( gene_expression[ list(gene_expression.keys())[0] ].keys() )
 	coexpressed_genes = {}
+	output_data = []
 	for i, gene2 in enumerate( candidate_genes ):
 		if candidate != gene2:
 			values = []
@@ -1602,9 +1624,17 @@ def one_vs_all_coexp( candidate, candidate_genes, gene_expression ):
 					sys.stdout.write( "ERROR (coexp): tissue not found - " + tissue+ "\n" )
 					sys.stdout.flush()
 			r, p = stats.spearmanr( values )
-			if not math.isnan( r ) and total_expression > 30:
-				if r > 0.3 and p < 0.05:
+			if not math.isnan( r ) and total_expression > minexpression:
+				if r > rcutoff and p < pcutoff:
 					coexpressed_genes.update( { gene2: r } )
+					output_data.append( { 'id': gene2, 'r': r, 'p': p } )
+	
+	# --- write data into output file --- #
+	with open( single_coexp_output_file, "w" ) as out:
+		for each in sorted( output_data, key=itemgetter('r', 'p') ):
+			new_line = [ candidate, each['id'], str( each['r'] ), str( each['p'] ) ]
+			out.write( "\t".join( new_line ) + "\n" )	
+	
 	return coexpressed_genes
 
 
@@ -1624,7 +1654,7 @@ def load_genes_of_interest( KIPEs_summary_file ):
 				genes_per_function.update( { step: [ parts[0] ] } )
 			line = f.readline()
 	return genes_per_function
-	
+
 
 def construct_html_output( html_file, genes_per_function, function_order, coexp_per_gene ):
 	"""! @brief generate HTML heatmap """
@@ -1669,7 +1699,7 @@ def calculate_color( value ):
 	return color
 
 
-def automatic_coexp( expression_file, output_file, KIPEs_summary_file ):
+def automatic_coexp( expression_file, output_file, KIPEs_summary_file, coexp_output_folder, rcutoff, pcutoff, minexpression ):
 	"""! @brief run automatic co-expression analysis for all candidates identified by KIPEs """
 
 	gene_expression = load_expression_values( expression_file )
@@ -1677,10 +1707,14 @@ def automatic_coexp( expression_file, output_file, KIPEs_summary_file ):
 	
 	candidate_genes = [ x for function in list(genes_per_function.values()) for x in function ]
 	
+	single_coexp_folder = coexp_output_folder + "individual_genes/"
+	if not os.path.exists( single_coexp_folder ):
+		os.makedirs( single_coexp_folder )
 	
 	coexp_per_gene = {}
 	for gene in candidate_genes:
-		coexp_per_gene.update( { gene: one_vs_all_coexp( gene, candidate_genes, gene_expression ) } )
+		single_coexp_output_file = single_coexp_folder + gene + ".txt"
+		coexp_per_gene.update( { gene: one_vs_all_coexp( gene, candidate_genes, gene_expression, single_coexp_output_file, rcutoff, pcutoff, minexpression ) } )
 	
 	
 	function_order = sorted( genes_per_function.keys() )	#steps in the pathway
@@ -1729,13 +1763,13 @@ def md5_calculator( input_file ):
 		return "n/a"
 
 
-def write_general_input_to_doc_file( fulldoc, bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff, exp_file, forester_state ):
+def write_general_input_to_doc_file( fulldoc, bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, treemethod, fasttree, iqtree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff, exp_file, forester_state ):
 	"""! @brief write all input into the documentation file 
 		@note This function is based on the MYB_annotator: https://doi.org/10.1101/2021.10.16.464636
 	"""
 	
 	# --- KIPEs version and general info --- #
-	fulldoc.write( "Please cite 'Pucker, B.; Reiher, F.; Schilbert, H.M. Automatic Identification of Players in the Flavonoid Biosynthesis with Application on the Biomedicinal Plant Croton tiglium. Plants 2020, 9, 1103. https://doi.org/10.3390/plants9091103 Pucker, B.; Reiher, F.; Schilbert, H.M. Automatic Identification of Players in the Flavonoid Biosynthesis with Application on the Biomedicinal Plant Croton tiglium. Plants 2020, 9, 1103. https://doi.org/10.3390/plants9091103 ' when using KIPEs3.py.\n\n" )
+	fulldoc.write( "Please cite 'Pucker, B.; Reiher, F.; Schilbert, H.M. Automatic Identification of Players in the Flavonoid Biosynthesis with Application on the Biomedicinal Plant Croton tiglium. Plants 2020, 9, 1103. https://doi.org/10.3390/plants9091103 ' when using KIPEs3.py.\n\n" )
 	fulldoc.write( "KIPEs3.py version: " + __version__ + "\n\n" )
 	
 	fulldoc.write( "This documentation file contains the input file names followed by their md5sums. Modification of the file content will result in a different md5sum. All settings are documented as well to enable reproduction.\n\n" )
@@ -1777,7 +1811,19 @@ def write_general_input_to_doc_file( fulldoc, bait_seq_data_dir, output_dir, sub
 	fulldoc.write( "BLASTp path: " + blastp + "\n" )
 	fulldoc.write( "tBLASTn path: " + tblastn + "\n" )
 	fulldoc.write( "makeblastdb path: " + makeblastdb + "\n" )
-	fulldoc.write( "FastTree2 path: " + fasttree + " (Please add version manually)\n\n" )
+	fulldoc.write( "Tree method: " + treemethod + "\n" )
+	try:
+		fasttree_version_raw = subprocess.Popen( args=fasttree + " -help", stderr=subprocess.PIPE, shell=True )
+		fasttree_version = fasttree_version_raw.stderr.read()
+		fulldoc.write( "FastTree2 path: " + fasttree + " (" + str( fasttree_version )[10:18] + ")\n" )
+	except:
+		fulldoc.write( "FastTree2 path: " + fasttree + " (Please add version manually)\n" )
+	try:
+		iqtree_version_raw = subprocess.Popen( args=iqtree, stderr=subprocess.PIPE, shell=True )
+		iqtree_version = iqtree_version_raw.stderr.read()
+		fulldoc.write( "IQ-TREE path: " + iqtree + " (" + str( iqtree_version )[26:32] + ")\n" )
+	except:
+		fulldoc.write( "IQ-TREE path: " + iqtree + " (Please add version manually)\n\n" )
 	
 	# --- cutoffs and other settings --- #
 	fulldoc.write( "--cpus: " + str( cpus ) + "\n" )
@@ -1794,10 +1840,10 @@ def write_general_input_to_doc_file( fulldoc, bait_seq_data_dir, output_dir, sub
 	fulldoc.write( "construction of final gene trees: " + str( forester_state ) + "\n" )
 
 
-def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff, exp_file, forester_state ):
+def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, treemethod, fasttree, iqtree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff, exp_file, forester_state, rcutoff, pcutoff, minexpression ):
 	"""! @brief run whole KIPEs analysis for one subject sequence file """
 	
-	errors = validate_input( pos_data_dir, bait_seq_data_dir, makeblastdb, blastp, tblastn, mafft, fasttree )
+	errors = validate_input( pos_data_dir, bait_seq_data_dir, makeblastdb, blastp, tblastn, mafft, treemethod, fasttree, iqtree, )
 	if len( errors ) > 0:
 		for error in errors:
 			if error['seq']:
@@ -1844,7 +1890,7 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 	documentation_file = output_dir + "documentation_of_parameters_and_inputs.txt"
 	with open( documentation_file, "w" ) as fulldoc:
 		# --- generate basic documentation of input --- #
-		write_general_input_to_doc_file( fulldoc, bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff, exp_file, forester_state )
+		write_general_input_to_doc_file( fulldoc, bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, treemethod, fasttree, iqtree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff, exp_file, forester_state )
 	
 		# --- prepare subject --- #
 		peptide_file = output_dir + "subject.fasta"
@@ -1911,12 +1957,12 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 		# --- load BLAST results or classify based on phylogenetic tree --- #
 		self_scores = load_self_BLAST_hit_scores( self_blast_result_file )
 		
-		if len( fasttree ) > 1:
+		if treemethod != "none":
 			tree_tmp = output_dir + "tree_tmp/"
 			if not os.path.exists( tree_tmp ):
 				os.makedirs( tree_tmp )
 			blast_hits = tree_based_classification( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff,
-																			tree_tmp, fasttree, mafft, peps, ref_seqs, possibility_cutoff
+																			tree_tmp, treemethod, fasttree, iqtree, mafft, peps, ref_seqs, possibility_cutoff
 																			)
 		else:
 			blast_hits = load_BLAST_results( blast_result_file, self_scores, score_ratio_cutoff, similarity_cutoff, possibility_cutoff )
@@ -1968,16 +2014,17 @@ def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft,
 		#build phylogenetic tree with landmark sequences
 		if forester_state:
 			forester_output_folder = output_dir + "gene_trees/"
-			if len( fasttree ) == 0:
-				fasttree = "FastTree"
-			forester( final_pep_folder, forester_output_folder, bait_seq_data_dir, mafft, fasttree, occupancy=0.1 )
+			if treemethod == "none":
+				if len( fasttree ) == 0:
+					fasttree = "FastTree"
+			forester( final_pep_folder, forester_output_folder, bait_seq_data_dir, mafft, treemethod, fasttree, iqtree, occupancy=0.1 )
 			
 		if len( exp_file ) > 0:
 			coexp_output_folder = output_dir + "coexpression/"
 			if not os.path.exists( coexp_output_folder ):
 				os.makedirs( coexp_output_folder )
 			output_file = coexp_output_folder + "coexp_summary.txt"
-			automatic_coexp( exp_file, output_file, summary_file )
+			automatic_coexp( exp_file, output_file, summary_file, coexp_output_folder, rcutoff, pcutoff, minexpression )
 
 
 def seqtype_check( sequences ):
@@ -2054,10 +2101,22 @@ def main( arguments ):
 	
 	if '--fasttree' in arguments:
 		fasttree = arguments[ arguments.index('--fasttree')+1 ]
+		treemethod = "fasttree"
 		sys.stdout.write(  "INFO: classification of candidates will be based on phylogenetic trees.\n" )
 		sys.stdout.flush()
 	else:
 		fasttree = ""
+	
+	if '--iqtree' in arguments:
+		iqtree = arguments[ arguments.index('--iqtree')+1 ]
+		treemethod = "iqtree"
+		sys.stdout.write(  "INFO: classification of candidates will be based on phylogenetic trees.\n" )
+		sys.stdout.flush()
+	else:
+		iqtree = ""
+	
+	if fasttree == "" and iqtree == "":
+		treemethod = "none"
 		sys.stdout.write(  "INFO: classification of candidates will be based on BLAST hit similarity.\n" )
 		sys.stdout.flush()
 	
@@ -2132,6 +2191,21 @@ def main( arguments ):
 	else:
 		exp_file = ""
 	
+	if '--rcut' in arguments:
+		rcutoff = float( arguments[ arguments.index('--rcut')+1 ] )
+	else:
+		rcutoff = 0.3
+	
+	if '--pcut' in arguments:
+		pcutoff = float( arguments[ arguments.index('--pcut')+1 ] )
+	else:
+		pcutoff = 0.05
+	
+	if '--minexp' in arguments:
+		minexpression = int( arguments[ arguments.index('--minexp')+1 ] )
+	else:
+		minexpression = 30
+	
 	if '--forester' in arguments:
 		forester_state = True
 		sys.stdout.write( "Gene tree construction activated.\n" )
@@ -2154,10 +2228,10 @@ def main( arguments ):
 		
 		# --- start KIPEs --- #
 		KIPEs( 	bait_seq_data_dir, output_dirs[ xxx ], subject, pos_data_dir, seqtype,
-					mafft, blastp, tblastn, makeblastdb, fasttree, pathway_file,
+					mafft, blastp, tblastn, makeblastdb, treemethod, fasttree, iqtree, pathway_file,
 					cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size,
 					xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff,
-					exp_file, forester_state
+					exp_file, forester_state, rcutoff, pcutoff, minexpression
 				)
 
 
