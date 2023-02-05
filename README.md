@@ -117,6 +117,7 @@ Mandatory:
   --fasttree       STR    Full path to the FastTree binary
   
   --forester       STR    Activates the automatic construction of gene trees (on|off)[off]
+  
   --exp            STR    Gene expression file (activates heatmap construction)
   --rcut           FLOAT  Minimal correlation cutoff [0.3]
   --pcut           FLOAT  Maximal p-value cutoff [0.05]
@@ -182,6 +183,12 @@ Domains: The domain entry indicator (D) is followed by the name of the domain in
 `--forester` activates the automatic construction of gene tree with all identified candidates. One tree per step in the pathway is constructed with FastTree. The construction of gene trees requires that the `--fasttree`  is used. Otherwise, FastTree is expected in the $PATH. Default: off.
 
 `--exp` specifies gene expression file. The first column contains the gene IDs which need to match the sequence IDs of the dataset analyzed by KIPEs. The first row contains the names of samples. Providing a gene expression file activates the construction of a co-expression heatmap with all candidate genes. Default: off.
+
+`--rcut` specifies the minimal correlation cutoff value. Only genes with at least this strength of correlation are reported.
+
+`--pcut` specifies the maximal p-value cutoff. Only genes with a correlation that has a lower p-value are reported.
+
+`--minexp` specifies the minimal expression per gene (across all samples) that is required for a gene to be considered in the co-expression analysis.
   
 
 ### Generating tables of conserved residues
