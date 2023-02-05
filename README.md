@@ -118,6 +118,9 @@ Mandatory:
   
   --forester       STR    Activates the automatic construction of gene trees (on|off)[off]
   --exp            STR    Gene expression file (activates heatmap construction)
+  --rcut           FLOAT  Minimal correlation cutoff [0.3]
+  --pcut           FLOAT  Maximal p-value cutoff [0.05]
+  --minexp         INT    Minimal expression per gene [30]
 ```
 
 
