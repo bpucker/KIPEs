@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### b.pucker@tu-braunschweig.de ###
-__version__ = "v3.2.1"	#converted to Python3
+__version__ = "v3.2.2"	#converted to Python3
 
 __reference__ = "Pucker et al., 2020: https://doi.org/10.3390/plants9091103 and Rempel&Pucker, 2023: https://doi.org/10.1101/2022.06.30.498365"
 
@@ -1631,7 +1631,7 @@ def one_vs_all_coexp( candidate, candidate_genes, gene_expression, single_coexp_
 	
 	# --- write data into output file --- #
 	with open( single_coexp_output_file, "w" ) as out:
-		for each in sorted( output_data, key=itemgetter('r', 'p') ):
+		for each in sorted( output_data, key=itemgetter('r', 'p') )[::-1]:
 			new_line = [ candidate, each['id'], str( each['r'] ), str( each['p'] ) ]
 			out.write( "\t".join( new_line ) + "\n" )	
 	
