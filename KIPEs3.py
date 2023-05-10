@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### b.pucker@tu-braunschweig.de ###
-__version__ = "v3.2.2"	#converted to Python3
+__version__ = "v3.2.3"	#converted to Python3
 
 __reference__ = "Pucker et al., 2020: https://doi.org/10.3390/plants9091103 and Rempel&Pucker, 2023: https://doi.org/10.1101/2022.06.30.498365"
 
@@ -1330,7 +1330,7 @@ def which( cmd, mode=os.F_OK, path=None ):
 	return None
 
 
-def validate_input( pos_data_dir, bait_seq_data_dir, makeblastdb, blastp, tblastn, mafft, treemethod, fasttree, iqtree ):
+def validate_input( pos_data_dir, bait_seq_data_dir, makeblastdb, blastp, tblastn, mafft, treemethod, fasttree, iqtree, forester_state ):
 	"""! @brief validate input """
 	
 	### tool dependency checks ###
@@ -1345,6 +1345,9 @@ def validate_input( pos_data_dir, bait_seq_data_dir, makeblastdb, blastp, tblast
 				tool_state = False
 	if not tool_state:
 		sys.exit( "ERROR: specified binaries not detected. Please see error messages above for details." )
+	if forester_state:
+		if treemethod == "none":
+			sys.exit( "ERROR: Please specify a valid tree building method (e.g. FastTree) or disable the --forester option." )
 	
 	
 	### data consistency checks ###
@@ -1915,7 +1918,7 @@ def cytoscape_input_constructor( kipes_summary_file, single_gene_exp_folder, cyt
 def KIPEs( bait_seq_data_dir, output_dir, subject, pos_data_dir, seqtype, mafft, blastp, tblastn, makeblastdb, treemethod, fasttree, iqtree, pathway_file, cpus, score_ratio_cutoff, similarity_cutoff, max_gene_size, xsimcut, xconsrescut, xconsregcut, checks, possibility_cutoff, exp_file, forester_state, rcutoff, pcutoff, minexpression ):
 	"""! @brief run whole KIPEs analysis for one subject sequence file """
 	
-	errors = validate_input( pos_data_dir, bait_seq_data_dir, makeblastdb, blastp, tblastn, mafft, treemethod, fasttree, iqtree, )
+	errors = validate_input( pos_data_dir, bait_seq_data_dir, makeblastdb, blastp, tblastn, mafft, treemethod, fasttree, iqtree, forester_state )
 	if len( errors ) > 0:
 		for error in errors:
 			if error['seq']:
