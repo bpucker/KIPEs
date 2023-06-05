@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### b.pucker@tu-braunschweig.de ###
-__version__ = "v3.2.3"	#converted to Python3
+__version__ = "v3.2.4"	#converted to Python3
 
 __reference__ = "Pucker et al., 2020: https://doi.org/10.3390/plants9091103 and Rempel&Pucker, 2023: https://doi.org/10.1101/2022.06.30.498365"
 
@@ -2127,6 +2127,8 @@ def main( arguments ):
 	
 	if '--subjectdir' in arguments:
 		subject_dir = arguments[ arguments.index('--subjectdir')+1 ]
+		if subject_dir[-1] != "/":
+			subject_dir += "/"
 		subjects = []
 		for ext in [ "*.faa", "*.fa", "*.fasta", "*.faa.gz", "*.fa.gz", "*.fasta.gz", "*.FAA", "*.FA", "*.FASTA", "*.FAA.GZ", "*.FA.GZ", "*.FASTA.GZ" ]:
 			subjects += glob.glob( subject_dir + ext )
