@@ -387,4 +387,5 @@ When using KIPEs in your research, please cite:
 
 Pucker B., Reiher F., and Schilbert H.M. (2020). Automatic identification of players in the flavonoid biosynthesis with application on the biomedicinal plant _Croton tiglium_. Plants 2020, 9, 1103. doi:[10.3390/plants9091103](https://doi.org/10.3390/plants9091103).
 
-Rempel A. & Pucker B. (2022). KIPEs3: Automatic annotation of biosynthesis pathways. bioRxiv 2022.06.30.498365; doi:[10.1101/2022.06.30.498365](https://doi.org/10.1101/2022.06.30.498365)
+Rempel A, Choudhary N, Pucker B (2023) KIPEs3: Automatic annotation of biosynthesis pathways. PLoS ONE 18(11): e0294342. doi:[10.1371/journal.pone.0294342](https://doi.org/10.1371/journal.pone.0294342).
+
