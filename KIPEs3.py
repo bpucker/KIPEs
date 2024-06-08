@@ -1,6 +1,6 @@
 ### Boas Pucker ###
 ### b.pucker@tu-braunschweig.de ###
-__version__ = "v3.2.4"	#converted to Python3
+__version__ = "v3.2.6"	#converted to Python3
 
 __reference__ = "Pucker et al., 2020: https://doi.org/10.3390/plants9091103 and Rempel&Pucker, 2023: https://doi.org/10.1101/2022.06.30.498365"
 
@@ -628,13 +628,13 @@ def generate_subject_file( peptide_file, subject_name_file, subject_file ):
 		with open( subject_name_file, "w" ) as out2:
 			with open( subject_file, "r" ) as f:
 				counter = 1
-				out2.write( f.readline().strip()[1:].replace( "\t", "   " ) + '\t' )	#remove header
+				out2.write( f.readline().strip()[1:].replace( "\t", "   " ).replace( "\u2000", "   " ) + '\t' )	#remove header
 				line = f.readline()
 				seq = []
 				while line:
 					if line[0] == ">":
 						out.write( '>X' + str( counter ) + '\n' + "".join( seq ) + '\n' )
-						out2.write( "X" + str( counter ) + '\n' + line.strip()[1:].replace( "\t", "   " ) + "\t" )
+						out2.write( "X" + str( counter ) + '\n' + line.strip()[1:].replace( "\t", "   " ).replace( "\u2000", "   " ) + "\t" )
 						counter += 1
 						seq = []
 					else:
@@ -1772,7 +1772,9 @@ def write_general_input_to_doc_file( fulldoc, bait_seq_data_dir, output_dir, sub
 	"""
 	
 	# --- KIPEs version and general info --- #
-	fulldoc.write( "Please cite 'Pucker, B.; Reiher, F.; Schilbert, H.M. Automatic Identification of Players in the Flavonoid Biosynthesis with Application on the Biomedicinal Plant Croton tiglium. Plants 2020, 9, 1103. https://doi.org/10.3390/plants9091103 ' when using KIPEs3.py.\n\n" )
+	fulldoc.write( "Please cite 'Pucker, B.; Reiher, F.; Schilbert, H.M. Automatic Identification of Players in the Flavonoid Biosynthesis with Application on the Biomedicinal Plant Croton tiglium. Plants 2020, 9, 1103. https://doi.org/10.3390/plants9091103 ' when using KIPEs.\n\n" )
+	fulldoc.write( "Please cite 'Rempel A., Choudhary N. and Pucker B. (2023). KIPEs3: Automatic annotation of biosynthesis pathways. PLOS ONE 18(11): e0294342. doi: 10.1371/journal.pone.0294342. ' when using KIPEs3.\n\n" )
+	
 	fulldoc.write( "KIPEs3.py version: " + __version__ + "\n\n" )
 	
 	fulldoc.write( "This documentation file contains the input file names followed by their md5sums. Modification of the file content will result in a different md5sum. All settings are documented as well to enable reproduction.\n\n" )
