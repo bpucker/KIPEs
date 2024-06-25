@@ -1,0 +1,1 @@
+!AY133752.1_AT4G14090_UGT75C1 A5GT [Arabidopsis thaliana]

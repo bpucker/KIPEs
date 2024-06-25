@@ -1,0 +1,27 @@
+!ABB43031.1 F3-5-H [Osteospermum hybrid cultivar]
+R	P	33
+R	P	34
+R	P	36
+R	P	40
+R	A	301
+R	G	302
+R	T	305
+R	S	306
+R	E,P	386
+R	R,T	389
+R	G	438
+R	G	440
+R	F,R	441
+R	R	442
+R	C	444
+R	G	446
+R	S,A	487	S in Asteraceae
+D	oxygen_binding	301	306
+D	EXXR_motif	358	361
+D	proline_rich_hinge_region	32	40
+D	SRS1	98	120
+D	CR1	178	187
+D	SRS2	210	218
+D	SRS4	294	310
+D	SRS5	363	372
+D	SRS6	480	488

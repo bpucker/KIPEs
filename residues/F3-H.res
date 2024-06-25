@@ -1,0 +1,33 @@
+!Q9SD85.1 F3-H [Arabidopsis thaliana]
+R	P	34
+R	P	35
+R	G	36
+R	P	37
+R	P	41
+R	A	302
+R	G	303
+R	T	304
+R	D	305
+R	T	306
+R	E	359
+R	R	362
+R	R	401
+R	F	438
+R	G	439
+R	G	441
+R	R	442
+R	R	443
+R	C	445
+R	G	447
+D	proline_rich_domain	34	41
+D	M1	75	82
+D	SRS1	99	113
+D	conserved_motif_P450	438	447
+D	M2	420	423
+D	CR1	179	188
+D	SRS2	208	216
+D	SRS4	295	310
+D	oygen_binding_pocket	302	307
+D	SRS5	364	373
+D	SRS6	481	489
+D	M3	426	430
