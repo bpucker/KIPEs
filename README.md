@@ -4,7 +4,7 @@
 
 ### KIPEs is available on our [webserver](https://pbb-tools.de/KIPEs/) ###
 
-### Please get in touch if you need help running KIPEs on your own dataset: [Boas Pucker (email)](mailto:b.pucker@tu-braunschweig.de?subject=[GitHub]KIPEs_request) ###
+### Please get in touch if you need help running KIPEs on your own dataset: [Boas Pucker (email)](mailto:pucker@uni-bonn.de?subject=[GitHub]KIPEs_request) ###
 
 
 ## Abstract
