@@ -1,0 +1,1 @@
+!NM_121711.5_AT5G17050_UGT78D2 F3GT [Arabidopsis thaliana]
