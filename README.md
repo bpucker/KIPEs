@@ -316,9 +316,9 @@ Mandatory:
 
 ## Data sets
 
-**baits.tar.gz** recommended data sets for analysing the flavonoid biosynthesis in a new species.
+**baits** recommended data sets for analysing the flavonoid biosynthesis in a new species.
 
-**residues.tar.gz** recommended data sets for analysing the flavonoid biosynthesis in a new species.
+**residues** recommended data sets for analysing the flavonoid biosynthesis in a new species.
 
 **FlavonoidBioSynBaits_v1.0.tar.gz** was used in the proof of concept of [KIPEs](https://doi.org/10.3390/plants9091103) analysing the [transcriptome assembly of *Croton tiglium*](https://doi.org/10.3389/fmolb.2018.00062).
 
