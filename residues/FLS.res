@@ -1,0 +1,25 @@
+!NP_001190266.1 FLS [Arabidopsis thaliana]
+R	P	20
+R	I,V,L	24
+R	R	25
+R	E,D	29
+R	P	31
+R	T,A	35
+R	G	68
+R	H	75
+R	H,F,Y,N	132
+R	F	134
+R	K	202
+R	P	207
+R	H	221
+R	D	223
+R	S	225
+R	T	228
+R	L	230
+R	P	232
+R	G	261
+R	H	277
+R	R	287
+R	S	289
+R	F	293
+R	E,S,V	295
