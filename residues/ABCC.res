@@ -1,1 +1,0 @@
-!NM_001336522.1_ABCC2_AT2G34660 ABCC [Arabidopsis thaliana]
