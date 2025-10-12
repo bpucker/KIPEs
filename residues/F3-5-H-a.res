@@ -1,0 +1,71 @@
+!BAA03438.1 F3-5-H_a [Petunia x hybrida]
+R	P	34
+R	P	35
+R	P	37
+R	P	41
+R	G	44
+R	H	54
+R	Y	64
+R	G	65
+R	G	73
+R	D	94
+R	F	97
+R	R	100
+R	F	118
+R	K	130
+R	E	152
+R	R	192
+R	G	216
+R	N	219
+R	D	222
+R	D	231
+R	G	234
+R	A	301
+R	G	302
+R	T	305
+R	S	306
+R	E	311
+R	W	312
+R	E	316
+R	E	330
+R	G	336
+R	R	339
+R	D	345
+R	L	349
+R	A	354
+R	K	357
+R	E	358
+R	R	361
+R	H	363
+R	P	364
+R	P	367
+R	L	368
+R	P	386
+R	T	389
+R	I	398
+R	R	400
+R	P	408
+R	F	411
+R	P	413
+R	R	415
+R	F	416
+R	F	436
+R	G	437
+R	G	439
+R	R	440
+R	R	441
+R	C	443
+R	G	445
+R	V	453
+R	F	464
+R	W	466
+R	E	479
+R	G	482
+R	A,S,V	484
+R	L	491
+R	R	498
+D	proline_rich_region	34	41
+D	oxygen_binding_pocket	301	306
+D	ExxR_motif	358	361
+D	C_Terminal_helix	396	400
+D	heme_binding_domain	436	445
