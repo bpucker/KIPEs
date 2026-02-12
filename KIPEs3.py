@@ -1,6 +1,6 @@
 ### Boas Pucker ###
-### b.pucker@tu-braunschweig.de ###
-__version__ = "v3.2.6"	#converted to Python3
+### pucker@uni-bonn.de ###
+__version__ = "v3.2.7"	#converted to Python3
 
 __reference__ = "Pucker et al., 2020: https://doi.org/10.3390/plants9091103 and Rempel&Pucker, 2023: https://doi.org/10.1101/2022.06.30.498365"
 
@@ -42,7 +42,7 @@ __usage__ = """
 					--pcut <P_VALUE_CUTOFF>[0.05]
 					--minexp <MIN_EXP_PER_GENE>[30]
 					
-					bug reports and feature requests: b.pucker@tu-bs.de
+					bug reports and feature requests: pucker@uni-bonn.de
 					Complete documentation: https://github.com/bpucker/KIPEs
 					"""
 
