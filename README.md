@@ -7,7 +7,7 @@
 ### Please get in touch if you need help running KIPEs on your own dataset: [Boas Pucker (email)](mailto:pucker@uni-bonn.de?subject=[GitHub]KIPEs_request) ###
 
 
-<a href="">
+<a href="https://www.pbb.uni-bonn.de">
 <img alt="de.NBI logo" src="https://github.com/bpucker/KIPEs/blob/master/deNBI_Logo_rgb_Rand.jpg?raw=true"  width="600">
 </a>  
 
