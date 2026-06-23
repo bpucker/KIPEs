@@ -7,6 +7,12 @@
 ### Please get in touch if you need help running KIPEs on your own dataset: [Boas Pucker (email)](mailto:pucker@uni-bonn.de?subject=[GitHub]KIPEs_request) ###
 
 
+<a href="">
+<img alt="de.NBI logo" src="https://github.com/bpucker/KIPEs/blob/master/deNBI_Logo_rgb_Rand.jpg?raw=true"  width="600">
+</a>  
+This is an approved de.NBI service. Help us improve by completing our [short user survey](https://www.surveymonkey.de/r/denbi-service?sc=associatedpartner&tool=KIPEs).
+
+
 ## Abstract
 
 This tool enables the identification of candidate sequences in a collection of peptide sequences, transcript sequences, or in a genome sequence. An initial BLAST (BLASTp, tBLASTn) search is used to get putative sequences which are than analysed in a global alignment with MAFFT and screened for the presence of conserved residues and conserved domains. As a proof of concept, this tool was applied for the identification of genes in the flavonoid biosynthesis.
